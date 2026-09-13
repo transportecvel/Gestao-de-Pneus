@@ -1,4 +1,4 @@
-name: Deploy Automatico para VPS
+name: Deploy Automatico
 
 on:
   push:
@@ -8,18 +8,18 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout do codigo
+      - name: Baixar o codigo
         uses: actions/checkout@v4
 
-      - name: Sync arquivos via rsync / SSH
-        uses: appleboy/rsync-action@v0.2.1
+      - name: Copiar arquivos via SCP
+        uses: appleboy/scp-action@v1
         with:
           host: ${{ secrets.VPS_HOST }}
-          port: ${{ secrets.VPS_PORT }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
-          source: "./"
+          port: ${{ secrets.VPS_PORT }}
+          source: "./*"
           target: "/home/ubuntu/projetos/sites/Gestao-de-Pneus"
-          delete: true
-          exclude: ".git* .github*"
+          rm: true
