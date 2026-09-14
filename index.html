@@ -27,6 +27,7 @@
 
     <!-- Chart.js para Gráficos e Telemetria -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
         :root {
@@ -91,6 +92,68 @@
             background-color: var(--bg-card-hover) !important;
             color: var(--text-main) !important;
             border-color: var(--border) !important;
+        }
+
+        /* SKELETON LOADING (cards de estatística enquanto dados não chegam) */
+        .skeleton-loading {
+            position: relative;
+            color: transparent !important;
+            background: linear-gradient(90deg, var(--line) 25%, var(--bg-card-hover) 50%, var(--line) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.4s ease-in-out infinite;
+            border-radius: 6px;
+            min-height: 1.4em;
+            display: inline-block;
+            min-width: 3.5em;
+        }
+        @keyframes skeleton-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* TABELAS RESPONSIVAS -> VIRAM CARDS EMPILHADOS NO MOBILE */
+        @media (max-width: 768px) {
+            table.responsive-table thead {
+                display: none;
+            }
+            table.responsive-table, table.responsive-table tbody, table.responsive-table tr, table.responsive-table td {
+                display: block;
+                width: 100%;
+            }
+            table.responsive-table tr {
+                background: var(--bg-card);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-lg);
+                margin-bottom: 10px;
+                padding: 8px 4px;
+                box-shadow: var(--shadow-sm);
+            }
+            table.responsive-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                padding: 7px 12px !important;
+                border: none !important;
+                text-align: right !important;
+                font-size: 12.5px;
+            }
+            table.responsive-table td::before {
+                content: attr(data-label);
+                font-size: 10.5px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--text-muted);
+                text-align: left;
+                flex-shrink: 0;
+            }
+            table.responsive-table td[data-label="Ações"] {
+                justify-content: flex-end;
+            }
+            table.responsive-table td[data-label="Ações"]::before {
+                display: none;
+            }
         }
 
         body {
@@ -198,21 +261,63 @@
         }
 
         .btn-editorial-primary:hover {
-            background-color: #223250;
+            background-color: var(--primary-hover);
             box-shadow: 0 4px 12px rgba(43, 64, 104, 0.25);
         }
 
         .btn-editorial-secondary {
-            background-color: #ffffff;
-            border: 1px solid var(--line);
-            color: var(--ink);
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
             transition: all 0.2s ease;
         }
 
         .btn-editorial-secondary:hover {
-            background-color: #f9f8f5;
-            border-color: #cfc8b8;
+            background-color: var(--bg-card-hover);
+            border-color: var(--accent);
         }
+
+        /* BASE DOS BOTÕES GENÉRICOS (.btn, .btn-primary, .btn-secondary, .btn-danger, .btn-success)
+           Não existia definição para essas classes -- ficavam sem cor de fundo nenhuma,
+           especialmente visível/feio no modo escuro. Estilo inline no elemento continua tendo prioridade. */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border-radius: 0.6rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            padding: 8px 14px;
+            font-size: 12.5px;
+        }
+        .btn-primary {
+            background-color: var(--primary);
+            color: #ffffff;
+        }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+
+        .btn-secondary {
+            background-color: var(--bg-card);
+            border-color: var(--border);
+            color: var(--text-main);
+        }
+        .btn-secondary:hover { background-color: var(--bg-card-hover); }
+
+        .btn-danger {
+            background-color: rgba(220, 38, 38, 0.1);
+            border-color: rgba(220, 38, 38, 0.25);
+            color: var(--danger);
+        }
+        .btn-danger:hover { background-color: rgba(220, 38, 38, 0.18); }
+
+        .btn-success {
+            background-color: var(--success);
+            color: #ffffff;
+        }
+        .btn-success:hover { filter: brightness(0.92); }
 
         .badge-editorial {
             background-color: #ede8dc;
@@ -624,6 +729,13 @@
                 <a href="javascript:void(0)" id="btn-tab-logs" onclick="changeTab('logs')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
                     <span class="flex items-center gap-2.5"><i class="fa-solid fa-shield-halved w-4 text-center"></i> Logs de Auditoria</span>
                 </a>
+
+                <div id="menuAdminGroup" class="hidden">
+                    <div class="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-[#7a7365]">Administração</div>
+                    <a href="javascript:void(0)" id="btn-tab-usuarios" onclick="changeTab('usuarios')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-users-gear w-4 text-center"></i> Usuários & Permissões</span>
+                    </a>
+                </div>
             </nav>
 
             <!-- Sidebar Footer -->
@@ -700,7 +812,7 @@
                                 <span class="text-[11px] font-semibold uppercase tracking-wider">Estoque</span>
                                 <i class="fa-solid fa-boxes-stacked text-xs text-blue-600"></i>
                             </div>
-                            <div id="kpiEstoque" class="text-2xl font-bold text-[#22201b] t-num">0</div>
+                            <div id="kpiEstoque" class="text-2xl font-bold text-[#22201b] t-num skeleton-loading">0</div>
                             <span class="text-[10px] text-[#7a7365]">Pneus no galpão</span>
                         </div>
 
@@ -709,7 +821,7 @@
                                 <span class="text-[11px] font-semibold uppercase tracking-wider">Em Rodagem</span>
                                 <i class="fa-solid fa-truck-moving text-xs text-emerald-600"></i>
                             </div>
-                            <div id="kpiRodando" class="text-2xl font-bold text-[#22201b] t-num">0</div>
+                            <div id="kpiRodando" class="text-2xl font-bold text-[#22201b] t-num skeleton-loading">0</div>
                             <span class="text-[10px] text-[#7a7365]">Pneus montados</span>
                         </div>
 
@@ -718,7 +830,7 @@
                                 <span class="text-[11px] font-semibold uppercase tracking-wider">No Recape</span>
                                 <i class="fa-solid fa-recycle text-xs text-amber-600"></i>
                             </div>
-                            <div id="kpiRecape" class="text-2xl font-bold text-[#22201b] t-num">0</div>
+                            <div id="kpiRecape" class="text-2xl font-bold text-[#22201b] t-num skeleton-loading">0</div>
                             <span class="text-[10px] text-[#7a7365]">Em reforma</span>
                         </div>
 
@@ -727,7 +839,7 @@
                                 <span class="text-[11px] font-semibold uppercase tracking-wider">Descarte</span>
                                 <i class="fa-solid fa-trash text-xs text-red-600"></i>
                             </div>
-                            <div id="kpiDescarte" class="text-2xl font-bold text-[#22201b] t-num">0</div>
+                            <div id="kpiDescarte" class="text-2xl font-bold text-[#22201b] t-num skeleton-loading">0</div>
                             <span class="text-[10px] text-[#7a7365]">Fim de vida útil</span>
                         </div>
 
@@ -736,7 +848,7 @@
                                 <span class="text-[11px] font-semibold uppercase tracking-wider">Investimento</span>
                                 <i class="fa-solid fa-brazilian-real-sign text-xs text-purple-600"></i>
                             </div>
-                            <div id="kpiInvestido" class="text-lg font-bold text-[#22201b] t-num truncate">R$ 0,00</div>
+                            <div id="kpiInvestido" class="text-lg font-bold text-[#22201b] t-num truncate skeleton-loading">R$ 0,00</div>
                             <span class="text-[10px] text-[#7a7365]">Total imobilizado</span>
                         </div>
 
@@ -745,7 +857,7 @@
                                 <span class="text-[11px] font-semibold uppercase tracking-wider">CPK Global</span>
                                 <i class="fa-solid fa-gauge-high text-xs text-[#2b4068]"></i>
                             </div>
-                            <div id="kpiCpkGlobal" class="text-lg font-bold text-[#22201b] t-num truncate">R$ 0,000</div>
+                            <div id="kpiCpkGlobal" class="text-lg font-bold text-[#22201b] t-num truncate skeleton-loading">R$ 0,000</div>
                             <span class="text-[10px] text-[#7a7365]">Custo médio / km</span>
                         </div>
                     </div>
@@ -889,11 +1001,11 @@
                             <div class="flex items-center gap-2">
                                 <div class="relative">
                                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#7a7365]"></i>
-                                    <input type="text" id="frotaSearchInput" oninput="filtrarGridFrotaPorTipo(filtroTipoFrotaAtual)" placeholder="Buscar frota, placa ou filial..." class="bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl pl-8 pr-3 py-1.5 text-xs text-[#22201b] focus:ring-2 focus:ring-[#2b4068]">
+                                    <input type="text" id="frotaSearchInput" oninput="paginaGridFrotaAtual = 1; filtrarGridFrotaPorTipo(filtroTipoFrotaAtual)" placeholder="Buscar frota, placa ou filial..." class="bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl pl-8 pr-3 py-1.5 text-xs text-[#22201b] focus:ring-2 focus:ring-[#2b4068]">
                                     <div id="frotaDropdownList" class="hidden absolute top-full left-0 right-0 bg-white border border-[#e2ddd2] rounded-xl shadow-lg mt-1 z-30 max-h-48 overflow-y-auto"></div>
                                 </div>
                                 <input type="hidden" id="buscaGridFrota" value="">
-                                <select id="filtroFilialGridFrota" onchange="filtrarGridFrotaPorTipo(filtroTipoFrotaAtual)" class="bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-2.5 py-1.5 text-xs text-[#22201b] font-medium">
+                                <select id="filtroFilialGridFrota" onchange="paginaGridFrotaAtual = 1; filtrarGridFrotaPorTipo(filtroTipoFrotaAtual)" class="bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-2.5 py-1.5 text-xs text-[#22201b] font-medium">
                                     <option value="">Todas as Filiais</option>
                                 </select>
                             </div>
@@ -919,9 +1031,10 @@
                         </div>
 
                         <!-- Grid de Veículos -->
-                        <div id="gridControleFrota" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 max-h-[520px] overflow-y-auto custom-scrollbar p-1">
+                        <div id="gridControleFrota" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 p-1">
                             <!-- Cards renderizados dinamicamente pelo JS -->
                         </div>
+                        <div id="paginacaoGridFrota" class="flex items-center justify-between px-1 pt-3 text-xs text-[#7a7365]"></div>
                     </div>
                 </section>
 
@@ -945,11 +1058,19 @@
                                 <button type="button" onclick="abrirFormularioVeiculo(-1)" class="btn-editorial-primary px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5">
                                     <i class="fa-solid fa-plus"></i> Cadastrar Veículo
                                 </button>
+                                <button onclick="exportarFrotaExcel()" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5" title="Exportar Excel">
+                                    <i class="fa-solid fa-file-excel text-emerald-700"></i>
+                                    <span class="hidden sm:inline">Excel</span>
+                                </button>
+                                <button onclick="exportarFrotaPDF()" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5" title="Exportar PDF">
+                                    <i class="fa-solid fa-file-pdf text-red-700"></i>
+                                    <span class="hidden sm:inline">PDF</span>
+                                </button>
                             </div>
                         </div>
 
                         <div class="flex-1 overflow-x-auto max-h-[480px] custom-scrollbar">
-                            <table class="w-full text-left text-xs">
+                            <table class="w-full text-left text-xs responsive-table">
                                 <thead class="sticky top-0 bg-white">
                                     <tr class="border-b border-[#e2ddd2] text-[#7a7365] font-semibold">
                                         <th class="py-2.5 px-3">Frota</th>
@@ -1047,16 +1168,24 @@
                             <div class="flex items-center gap-2">
                                 <div class="relative">
                                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#7a7365]"></i>
-                                    <input type="text" id="buscaEstoqueTire" oninput="carregarTabelaEstoque()" placeholder="Buscar por fogo, marca, medida..." class="bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl pl-8 pr-3 py-1.5 text-xs text-[#22201b] focus:ring-2 focus:ring-[#2b4068]">
+                                    <input type="text" id="buscaEstoqueTire" oninput="paginaEstoqueAtual = 1; carregarTabelaEstoque()" placeholder="Buscar por fogo, marca, medida..." class="bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl pl-8 pr-3 py-1.5 text-xs text-[#22201b] focus:ring-2 focus:ring-[#2b4068]">
                                 </div>
                                 <button onclick="changeTab('tab-cadastro')" class="btn-editorial-primary px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
                                     <i class="fa-solid fa-plus"></i> Dar Entrada
+                                </button>
+                                <button onclick="exportarEstoqueExcel()" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5" title="Exportar Excel">
+                                    <i class="fa-solid fa-file-excel text-emerald-700"></i>
+                                    <span class="hidden sm:inline">Excel</span>
+                                </button>
+                                <button onclick="exportarEstoquePDF()" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5" title="Exportar PDF">
+                                    <i class="fa-solid fa-file-pdf text-red-700"></i>
+                                    <span class="hidden sm:inline">PDF</span>
                                 </button>
                             </div>
                         </div>
 
                         <div class="overflow-x-auto max-h-[550px] custom-scrollbar">
-                            <table class="w-full text-left text-xs">
+                            <table class="w-full text-left text-xs responsive-table" id="tabelaEstoqueCompleta">
                                 <thead class="sticky top-0 bg-white">
                                     <tr class="border-b border-[#e2ddd2] text-[#7a7365] font-semibold">
                                         <th class="py-2.5 px-3">Fogo</th>
@@ -1074,6 +1203,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="paginacaoEstoque" class="flex items-center justify-between px-1 pt-3 text-xs text-[#7a7365]"></div>
                     </div>
                 </section>
 
@@ -1267,6 +1397,15 @@
 
                 <!-- 6. TAB VISTORIA DE SULCOS -->
                 <section id="tab-vistorias" class="tab-pane space-y-6">
+                    <div id="painelRevisaoPendente" class="bg-amber-50/60 rounded-2xl border border-amber-200 p-5 shadow-sm hidden">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i class="fa-solid fa-user-clock text-amber-600"></i>
+                            <h3 class="text-sm font-semibold text-[#22201b]">Vistorias Pendentes de Revisão</h3>
+                            <span class="text-[10px] text-[#7a7365]">— medidas por aprendiz, aguardando confirmação</span>
+                        </div>
+                        <div id="listaRevisaoPendente" class="space-y-2"></div>
+                    </div>
+
                     <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-4 mb-4">
                             <div>
@@ -1410,11 +1549,28 @@
                                     <!-- Renderizado via JS -->
                                 </div>
 
+                                <!-- Gráfico de Custo Acumulado do Pneu -->
+                                <div id="histCustoChartCard" class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
+                                    <div class="border-b border-[#e2ddd2] pb-3 mb-4">
+                                        <h3 class="text-sm font-semibold text-[#22201b]">Custo Acumulado ao Longo do Tempo</h3>
+                                        <p class="text-xs text-[#7a7365]">Compra + recapes + consertos, por evento do ciclo de vida</p>
+                                    </div>
+                                    <div style="height: 220px;">
+                                        <canvas id="histCustoChart"></canvas>
+                                    </div>
+                                </div>
+
                                 <!-- Linha do Tempo Visual de Eventos -->
                                 <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
-                                    <div class="border-b border-[#e2ddd2] pb-3 mb-4">
-                                        <h3 class="text-sm font-semibold text-[#22201b]">Linha do Tempo de Movimentações & Vistorias</h3>
-                                        <p class="text-xs text-[#7a7365]">Histórico completo e imutável de ciclo de vida</p>
+                                    <div class="border-b border-[#e2ddd2] pb-3 mb-4 flex items-center justify-between gap-3">
+                                        <div>
+                                            <h3 class="text-sm font-semibold text-[#22201b]">Linha do Tempo de Movimentações & Vistorias</h3>
+                                            <p class="text-xs text-[#7a7365]">Histórico completo e imutável de ciclo de vida</p>
+                                        </div>
+                                        <button onclick="exportarHistoricoPneuExcel()" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 flex-shrink-0" title="Exportar Excel">
+                                            <i class="fa-solid fa-file-excel text-emerald-700"></i>
+                                            <span class="hidden sm:inline">Excel</span>
+                                        </button>
                                     </div>
                                     <div id="timelineVisualContainer" class="space-y-4">
                                         <!-- Renderizado via JS -->
@@ -1442,6 +1598,25 @@
 
                         <div id="logsContainerConsole" class="space-y-2 max-h-[600px] overflow-y-auto font-mono text-xs custom-scrollbar">
                             <div class="text-center py-8 text-[#7a7365]">Nenhum registro de log nesta sessão.</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB: USUÁRIOS & PERMISSÕES (SOMENTE ADMINISTRADOR) -->
+                <section id="tab-usuarios" class="tab-pane space-y-6">
+                    <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-4 mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-[#22201b]">Usuários & Permissões</h3>
+                                <p class="text-xs text-[#7a7365]">Administrador sempre tem acesso total. As permissões abaixo liberam exceções para operador/aprendiz.</p>
+                            </div>
+                            <button onclick="abrirFormularioUsuario()" class="btn-editorial-primary px-3.5 py-1.5 rounded-xl text-xs font-medium flex items-center gap-2">
+                                <i class="fa-solid fa-user-plus"></i> Novo Usuário
+                            </button>
+                        </div>
+
+                        <div id="usuariosListaContainer" class="space-y-2">
+                            <div class="text-center py-8 text-[#7a7365]">Carregando usuários...</div>
                         </div>
                     </div>
                 </section>
@@ -3129,6 +3304,62 @@
 
         let usuarioLogado = "";
         let sessionToken = ""; // token de sessão retornado pelo login, exigido pelo backend em toda ação protegida
+        let perfilLogado = "";
+        let usuarioIdLogado = null;
+        let permissoesLogado = {};
+
+        function temPermissao(chave) {
+            return perfilLogado === 'administrador' || permissoesLogado[chave] === true;
+        }
+
+        // ====================================================
+        // PERSISTÊNCIA DE SESSÃO (sobrevive a F5 / fechar e reabrir a aba)
+        // Usa sessionStorage (não localStorage) de propósito: a sessão dura
+        // enquanto a aba estiver aberta, e não fica guardada indefinidamente
+        // no navegador depois que a pessoa fecha tudo -- mais seguro num
+        // computador compartilhado de pátio/oficina.
+        // ====================================================
+        function salvarSessaoStorage() {
+            try {
+                sessionStorage.setItem('aconpneus_sessao', JSON.stringify({
+                    usuarioLogado, sessionToken, perfilLogado, usuarioIdLogado, permissoesLogado
+                }));
+            } catch (e) { /* sessionStorage indisponível -- segue sem persistir */ }
+        }
+
+        function limparSessaoStorage() {
+            try { sessionStorage.removeItem('aconpneus_sessao'); } catch (e) {}
+        }
+
+        function restaurarSessaoStorage() {
+            let salva = null;
+            try { salva = sessionStorage.getItem('aconpneus_sessao'); } catch (e) { return; }
+            if (!salva) return;
+
+            try {
+                const dados = JSON.parse(salva);
+                if (!dados || !dados.sessionToken || !dados.usuarioLogado) return;
+
+                usuarioLogado = dados.usuarioLogado;
+                sessionToken = dados.sessionToken;
+                perfilLogado = dados.perfilLogado || "";
+                usuarioIdLogado = dados.usuarioIdLogado || null;
+                permissoesLogado = dados.permissoesLogado || {};
+
+                entrarNoSistema(usuarioLogado, "Sessão restaurada");
+            } catch (e) {
+                limparSessaoStorage();
+            }
+        }
+
+        // Chamada quando o backend recusa uma ação por sessão expirada/inválida.
+        // Derruba a sessão local e manda de volta pra tela de login, em vez de
+        // deixar a pessoa "presa" numa tela que não funciona mais em silêncio.
+        function forcarLogoutPorSessaoExpirada() {
+            if (!usuarioLogado) return; // já está deslogado, evita loop de toasts
+            mostrarToast("Sessão expirada", "Faça login novamente para continuar.", "error");
+            realizarLogout();
+        }
         let selectedVisualizerWheel = "";
 
         // AUTHENTICATION LOGIC (USER ROLES AND REDIRECTS WITH REAL N8N CONNECTIVITY - Ideia 3 - EXCLUSIVELY VIA SPREADSHEET)
@@ -3160,6 +3391,9 @@
                             if (serverRes && (serverRes.authenticated === true || serverRes.valid === true)) {
                                 const authenticatedUser = serverRes.user || user;
                                 sessionToken = serverRes.token || "";
+                                perfilLogado = serverRes.perfil || "operador";
+                                usuarioIdLogado = serverRes.usuarioId || null;
+                                permissoesLogado = serverRes.permissoes || {};
                                 entrarNoSistema(authenticatedUser, "Banco de Dados (Tabela USUARIOS)");
                             } else {
                                 tratarLoginIncorreto(errorMsg, loginCard, user);
@@ -3202,6 +3436,8 @@
             usuarioLogado = userName;
             adicionarLog("LOGIN", "Usuário autenticado com sucesso", `Sessão iniciada como ${usuarioLogado} via ${dbSource}`);
 
+            salvarSessaoStorage();
+
             // Set operational badges
             document.getElementById("desktopUserAvatar").innerText = usuarioLogado.substring(0, 1).toUpperCase();
             document.getElementById("desktopUserTag").innerText = usuarioLogado;
@@ -3217,6 +3453,10 @@
             }, 400);
 
             mostrarToast("Acesso Autorizado", `Bem-vindo de volta ao portal de pátio, ${usuarioLogado}!`, "success");
+
+            // Mostra o menu de administração (Usuários & Permissões) apenas para administrador
+            const menuAdmin = document.getElementById("menuAdminGroup");
+            if (menuAdmin) menuAdmin.classList.toggle("hidden", perfilLogado !== "administrador");
 
             // Initialize modules
             carregarTabelasEPanels();
@@ -3235,6 +3475,12 @@
         function realizarLogout() {
             usuarioLogado = "";
             sessionToken = "";
+            perfilLogado = "";
+            usuarioIdLogado = null;
+            permissoesLogado = {};
+            limparSessaoStorage();
+            const menuAdmin = document.getElementById("menuAdminGroup");
+            if (menuAdmin) menuAdmin.classList.add("hidden");
             document.getElementById("loginUser").value = "";
             document.getElementById("loginPassword").value = "";
             const errorMsg = document.getElementById("loginErrorMsg");
@@ -3278,28 +3524,49 @@
             // Trigger our beautiful loader animation and capture resolver
             const resolver = animarBarraSincronizacao(2500);
 
-            fetch(N8N_WEBHOOK_URL, {
+            return fetch(N8N_WEBHOOK_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             })
                 .then(res => {
                     resolver(); // Complete loader to 100% and close overlay
-                    if (res.ok) {
-                        mostrarToast("Sucesso no banco de dados!", "Os dados foram sincronizados com sucesso no banco de dados.", "success");
-                        adicionarLog("SHEETS", `Envio sincronizado concluído no banco de dados`, `Ação de integração de API: ${action}`);
-                    } else {
+
+                    if (!res.ok) {
                         mostrarToast("Erro n8n", `Falha de sincronização do webhook (Código ${res.status}). Operação salva na memória RAM.`, "error");
                         adicionarLog("ERROR", `Servidor n8n rejeitou a requisição`, `Status de erro retornado: HTTP ${res.status} para ação: ${action}`);
+                        sincronizarBancoDeDados(false);
+                        return { success: false, message: `Erro HTTP ${res.status}` };
                     }
-                    // Automatic fetch reload following operations to keep local data fresh!
-                    sincronizarBancoDeDados(false);
+
+                    return res.json().catch(() => ({})).then(corpo => {
+                        // O backend pode negar a ação mesmo com HTTP 200 (ex: sessão expirada, sem permissão)
+                        const negado = corpo && (corpo.success === false || corpo.authenticated === false || corpo.valid === false);
+
+                        if (negado) {
+                            if (corpo.sessionExpired === true) {
+                                adicionarLog("ERROR", `Sessão expirada durante ação: ${action}`, corpo.message || "");
+                                forcarLogoutPorSessaoExpirada();
+                            } else {
+                                mostrarToast("Ação não realizada", corpo.message || "O servidor recusou esta operação.", "error");
+                                adicionarLog("ERROR", `Ação recusada pelo backend: ${action}`, corpo.message || "Sem detalhes retornados pelo servidor.");
+                            }
+                        } else {
+                            mostrarToast("Sucesso no banco de dados!", "Os dados foram sincronizados com sucesso no banco de dados.", "success");
+                            adicionarLog("SHEETS", `Envio sincronizado concluído no banco de dados`, `Ação de integração de API: ${action}`);
+                        }
+
+                        // Automatic fetch reload following operations to keep local data fresh!
+                        sincronizarBancoDeDados(false);
+                        return corpo;
+                    });
                 })
                 .catch(err => {
                     resolver(); // Complete loader to 100% and close overlay
                     console.warn("Conexão offline/CORS. Salvando na RAM local.", err);
                     mostrarToast("Modo RAM Local", "Operação registrada em memória local (n8n offline ou CORS ativo).", "info");
                     adicionarLog("SUCCESS", `Ação registrada em contingência RAM Local`, `Conectores externos n8n/PostgreSQL offline ou bloqueados por CORS para ação: ${action}`);
+                    return { success: false, offline: true };
                 });
         }
 
@@ -3322,6 +3589,8 @@
             'historico': { title: 'Histórico & Vida do Pneu', subtitle: 'Ficha técnica completa, timeline de vida e laudos' },
             'tab-historico': { title: 'Histórico & Vida do Pneu', subtitle: 'Ficha técnica completa, timeline de vida e laudos' },
             'logs': { title: 'Logs de Auditoria', subtitle: 'Trilha de segurança, movimentações e integrações' },
+            'usuarios': { title: 'Usuários & Permissões', subtitle: 'Gestão de acesso, perfis e permissões individuais' },
+            'tab-usuarios': { title: 'Usuários & Permissões', subtitle: 'Gestão de acesso, perfis e permissões individuais' },
             'tab-logs': { title: 'Logs de Auditoria', subtitle: 'Trilha de segurança, movimentações e integrações' }
         };
 
@@ -3372,6 +3641,9 @@
             }
             if (rawId === 'historico' && typeof gerarListaSidebarHistorico === 'function') {
                 gerarListaSidebarHistorico();
+            }
+            if (rawId === 'usuarios' && typeof carregarUsuarios === 'function') {
+                carregarUsuarios();
             }
         }
 
@@ -3756,6 +4028,13 @@
 
         function carregarTabelasEPanels() {
             atualizarCamposFiliais();
+
+            // Remove o efeito skeleton assim que os dados reais chegam
+            document.querySelectorAll('#kpiEstoque, #kpiRodando, #kpiRecape, #kpiDescarte, #kpiInvestido, #kpiCpkGlobal')
+                .forEach(el => el.classList.remove('skeleton-loading'));
+
+            renderizarPainelRevisaoPendente();
+
             // Count states
             const estCount = pneus.filter(p => p.status_atual === "ESTOQUE").length;
             const rodCount = pneus.filter(p => p.status_atual === "RODANDO").length;
@@ -3860,6 +4139,9 @@
         }
 
         // LOAD TIRES IN STOCK FOR THE STOCK TABLE
+        let paginaEstoqueAtual = 1;
+        const ITENS_POR_PAGINA_ESTOQUE = 25;
+
         function carregarTabelaEstoque() {
             const tbody = document.getElementById("estoqueTabelaCorpo");
             const query = document.getElementById("buscaEstoqueTire").value.trim().toLowerCase();
@@ -3869,22 +4151,30 @@
 
             if (filtered.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:18px; color:var(--text-muted);">Nenhum pneu livre em estoque.</td></tr>`;
+                document.getElementById("paginacaoEstoque").innerHTML = "";
                 return;
             }
 
-            filtered.forEach(p => {
+            // PAGINAÇÃO
+            const totalPaginas = Math.max(1, Math.ceil(filtered.length / ITENS_POR_PAGINA_ESTOQUE));
+            if (paginaEstoqueAtual > totalPaginas) paginaEstoqueAtual = totalPaginas;
+            if (paginaEstoqueAtual < 1) paginaEstoqueAtual = 1;
+            const inicio = (paginaEstoqueAtual - 1) * ITENS_POR_PAGINA_ESTOQUE;
+            const pagina = filtered.slice(inicio, inicio + ITENS_POR_PAGINA_ESTOQUE);
+
+            pagina.forEach(p => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td style="font-weight:700; color:var(--primary);">#${p.fogo}</td>
-                    <td>${p.marca}</td>
-                    <td>${p.medida}</td>
-                    <td>${p.dot || "N/A"}</td>
-                    <td><span class="badge ${p.situacao === 'NOVO' ? 'badge-success' : 'badge-warning'}">${p.situacao}</span></td>
-                    <td>${p.recape_atual}</td>
-                    <td style="font-weight:700; color:var(--success);">${p.mm_inicial} MM</td>
-                    <td style="font-weight:600;">R$ ${p.valor_compra.toFixed(2)}</td>
-                    <td style="font-size:12px; color:var(--text-muted);">${p.filial}</td>
-                    <td style="text-align:right;">
+                    <td data-label="Fogo" style="font-weight:700; color:var(--primary);">#${p.fogo}</td>
+                    <td data-label="Marca">${p.marca}</td>
+                    <td data-label="Medida">${p.medida}</td>
+                    <td data-label="DOT">${p.dot || "N/A"}</td>
+                    <td data-label="Status"><span class="badge ${p.situacao === 'NOVO' ? 'badge-success' : 'badge-warning'}">${p.situacao}</span></td>
+                    <td data-label="Vida">${p.recape_atual}</td>
+                    <td data-label="Sulco" style="font-weight:700; color:var(--success);">${p.mm_inicial} MM</td>
+                    <td data-label="Valor" style="font-weight:600;">R$ ${p.valor_compra.toFixed(2)}</td>
+                    <td data-label="Filial" style="font-size:12px; color:var(--text-muted);">${p.filial}</td>
+                    <td data-label="Ações" style="text-align:right;">
                         <button class="btn btn-primary" onclick="prepararMontagemRapida('${p.id}')" style="padding:6px 12px; font-size:11px;">
                             <i class="fa-solid fa-truck"></i> Instalar
                         </button>
@@ -3892,6 +4182,208 @@
                 `;
                 tbody.appendChild(tr);
             });
+
+            renderizarPaginacaoEstoque(filtered.length, totalPaginas);
+        }
+
+        function renderizarPaginacaoEstoque(totalItens, totalPaginas) {
+            const container = document.getElementById("paginacaoEstoque");
+            if (!container) return;
+
+            const inicio = (paginaEstoqueAtual - 1) * ITENS_POR_PAGINA_ESTOQUE + 1;
+            const fim = Math.min(paginaEstoqueAtual * ITENS_POR_PAGINA_ESTOQUE, totalItens);
+
+            let botoes = "";
+            for (let i = 1; i <= totalPaginas; i++) {
+                if (totalPaginas > 7 && i !== 1 && i !== totalPaginas && Math.abs(i - paginaEstoqueAtual) > 1) {
+                    if (i === 2 || i === totalPaginas - 1) botoes += `<span class="px-1">...</span>`;
+                    continue;
+                }
+                botoes += `<button onclick="irParaPaginaEstoque(${i})" class="px-2.5 py-1 rounded-lg text-xs font-medium ${i === paginaEstoqueAtual ? 'bg-[#2b4068] text-white' : 'hover:bg-[#f9f8f5] text-[#5c5549]'}">${i}</button>`;
+            }
+
+            container.innerHTML = `
+                <span>Mostrando ${inicio}–${fim} de ${totalItens} pneus</span>
+                <div class="flex items-center gap-1">
+                    <button onclick="irParaPaginaEstoque(${paginaEstoqueAtual - 1})" ${paginaEstoqueAtual === 1 ? 'disabled' : ''} class="px-2 py-1 rounded-lg hover:bg-[#f9f8f5] disabled:opacity-30 disabled:cursor-not-allowed"><i class="fa-solid fa-chevron-left"></i></button>
+                    ${botoes}
+                    <button onclick="irParaPaginaEstoque(${paginaEstoqueAtual + 1})" ${paginaEstoqueAtual === totalPaginas ? 'disabled' : ''} class="px-2 py-1 rounded-lg hover:bg-[#f9f8f5] disabled:opacity-30 disabled:cursor-not-allowed"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            `;
+        }
+
+        function irParaPaginaEstoque(pagina) {
+            paginaEstoqueAtual = pagina;
+            carregarTabelaEstoque();
+        }
+
+        // ====================================================
+        // EXPORTAÇÃO: ESTOQUE (EXCEL / PDF)
+        // ====================================================
+        function exportarEstoqueExcel() {
+            const dados = pneus.filter(p => p.status_atual === "ESTOQUE").map(p => ({
+                "Fogo": p.fogo,
+                "Marca": p.marca,
+                "Medida": p.medida,
+                "DOT": p.dot || "",
+                "Situação": p.situacao,
+                "Recapes": p.recape_atual,
+                "Sulco (mm)": p.mm_inicial,
+                "Valor Compra (R$)": p.valor_compra,
+                "Filial": p.filial
+            }));
+
+            if (dados.length === 0) {
+                mostrarToast("Exportação", "Não há pneus em estoque para exportar.", "info");
+                return;
+            }
+
+            const planilha = XLSX.utils.json_to_sheet(dados);
+            const livro = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(livro, planilha, "Estoque");
+            const dataStr = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(livro, `estoque_pneus_${dataStr}.xlsx`);
+            mostrarToast("Exportado", "Planilha de estoque baixada com sucesso.", "success");
+        }
+
+        function exportarEstoquePDF() {
+            const tabelaOriginal = document.getElementById("tabelaEstoqueCompleta");
+            if (!tabelaOriginal) return;
+
+            const janela = window.open("", "_blank");
+            const dados = pneus.filter(p => p.status_atual === "ESTOQUE");
+            const linhas = dados.map(p => `
+                <tr>
+                    <td>#${p.fogo}</td><td>${p.marca}</td><td>${p.medida}</td>
+                    <td>${p.dot || "-"}</td><td>${p.situacao}</td><td>${p.recape_atual}</td>
+                    <td>${p.mm_inicial} mm</td><td>R$ ${p.valor_compra.toFixed(2)}</td><td>${p.filial}</td>
+                </tr>`).join("");
+
+            janela.document.write(`
+                <html>
+                <head>
+                    <title>Estoque de Pneus — AconPneus</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 24px; color: #22201b; }
+                        h1 { font-size: 16px; margin-bottom: 2px; }
+                        p.sub { color: #7a7365; font-size: 11px; margin-top: 0; margin-bottom: 16px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+                        th { background: #f4f2ec; font-weight: 700; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Relatório de Estoque de Pneus</h1>
+                    <p class="sub">Gerado em ${new Date().toLocaleString('pt-BR')} · ${dados.length} pneu(s) em estoque</p>
+                    <table>
+                        <thead><tr><th>Fogo</th><th>Marca</th><th>Medida</th><th>DOT</th><th>Situação</th><th>Vida</th><th>Sulco</th><th>Valor</th><th>Filial</th></tr></thead>
+                        <tbody>${linhas}</tbody>
+                    </table>
+                </body>
+                </html>
+            `);
+            janela.document.close();
+            setTimeout(() => janela.print(), 400);
+        }
+
+        // ====================================================
+        // EXPORTAÇÃO: FROTA CADASTRADA (EXCEL / PDF)
+        // ====================================================
+        function exportarFrotaExcel() {
+            if (caminhoes.length === 0) {
+                mostrarToast("Exportação", "Não há veículos cadastrados para exportar.", "info");
+                return;
+            }
+
+            const dados = caminhoes.map(c => ({
+                "Frota": c.frota,
+                "Placa": c.placa,
+                "Tipo": c.tipo_eixo || c.tipo || "",
+                "Modelo": c.modelo || "",
+                "Filial": c.filial || ""
+            }));
+
+            const planilha = XLSX.utils.json_to_sheet(dados);
+            const livro = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(livro, planilha, "Frota");
+            XLSX.writeFile(livro, `frota_cadastrada_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            mostrarToast("Exportado", "Planilha da frota baixada com sucesso.", "success");
+        }
+
+        function exportarFrotaPDF() {
+            const janela = window.open("", "_blank");
+            const linhas = caminhoes.map(c => `
+                <tr>
+                    <td>#${c.frota}</td><td>${c.placa}</td><td>${c.tipo_eixo || c.tipo || "-"}</td>
+                    <td>${c.modelo || "-"}</td><td>${c.filial || "-"}</td>
+                </tr>`).join("");
+
+            janela.document.write(`
+                <html>
+                <head>
+                    <title>Frota Cadastrada — AconPneus</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 24px; color: #22201b; }
+                        h1 { font-size: 16px; margin-bottom: 2px; }
+                        p.sub { color: #7a7365; font-size: 11px; margin-top: 0; margin-bottom: 16px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+                        th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+                        th { background: #f4f2ec; font-weight: 700; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Relatório de Frota Cadastrada</h1>
+                    <p class="sub">Gerado em ${new Date().toLocaleString('pt-BR')} · ${caminhoes.length} veículo(s)</p>
+                    <table>
+                        <thead><tr><th>Frota</th><th>Placa</th><th>Tipo</th><th>Modelo</th><th>Filial</th></tr></thead>
+                        <tbody>${linhas}</tbody>
+                    </table>
+                </body>
+                </html>
+            `);
+            janela.document.close();
+            setTimeout(() => janela.print(), 400);
+        }
+
+        // ====================================================
+        // EXPORTAÇÃO: HISTÓRICO DE MOVIMENTAÇÕES DE UM PNEU (EXCEL)
+        // ====================================================
+        function exportarHistoricoPneuExcel() {
+            if (!pneuHistoricoAtual) {
+                mostrarToast("Exportação", "Selecione um pneu no histórico antes de exportar.", "info");
+                return;
+            }
+
+            const movsDoTire = movimentacoes
+                .filter(m => m.fogo === pneuHistoricoAtual)
+                .sort((a, b) => new Date(a.data_evento) - new Date(b.data_evento));
+
+            if (movsDoTire.length === 0) {
+                mostrarToast("Exportação", "Esse pneu não tem movimentações registradas ainda.", "info");
+                return;
+            }
+
+            const dados = movsDoTire.map(m => ({
+                "Data": m.data_evento,
+                "Tipo": m.tipo,
+                "Status": m.status || "ATIVO",
+                "Frota": m.frota || "",
+                "Posição": m.posicao || "",
+                "KM Inicial": m.km_inicial || 0,
+                "KM Final": m.km_final || 0,
+                "KM Rodado": m.km_rodado || 0,
+                "Sulco Entrada (mm)": m.mm_entrada || 0,
+                "Sulco Saída (mm)": m.mm_saida || 0,
+                "Custo (R$)": m.custo || 0,
+                "Motivo": m.motivo || "",
+                "Operador": m.operador || ""
+            }));
+
+            const planilha = XLSX.utils.json_to_sheet(dados);
+            const livro = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(livro, planilha, "Historico");
+            XLSX.writeFile(livro, `historico_pneu_${pneuHistoricoAtual}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            mostrarToast("Exportado", "Histórico do pneu baixado com sucesso.", "success");
         }
 
         // FLEET VISUALIZER GRAPH DRAWING (TOCO vs TRUCK Dynamic Render with Rich Mechanics & Chassis Metadata Card)
@@ -3899,6 +4391,8 @@
         // CONTROLE DE FROTA (GRID, DOSSIÊ, CRUD & EIXOS)
         // ====================================================
         let filtroTipoFrotaAtual = "TODOS";
+        let paginaGridFrotaAtual = 1;
+        const ITENS_POR_PAGINA_GRID_FROTA = 24;
         let veiculoEdicaoPendente = null;
         let pneusExclusaoEixoPendentes = [];
 
@@ -3973,10 +4467,18 @@
                         <p style="font-size: 13px;">Tente alterar o filtro de busca ou cadastrar um novo ativo na frota.</p>
                     </div>
                 `;
+                document.getElementById("paginacaoGridFrota").innerHTML = "";
                 return;
             }
 
-            filtrados.forEach(c => {
+            // PAGINAÇÃO DA GRID
+            const totalPaginasGrid = Math.max(1, Math.ceil(filtrados.length / ITENS_POR_PAGINA_GRID_FROTA));
+            if (paginaGridFrotaAtual > totalPaginasGrid) paginaGridFrotaAtual = totalPaginasGrid;
+            if (paginaGridFrotaAtual < 1) paginaGridFrotaAtual = 1;
+            const inicioGrid = (paginaGridFrotaAtual - 1) * ITENS_POR_PAGINA_GRID_FROTA;
+            const paginaAtualItens = filtrados.slice(inicioGrid, inicioGrid + ITENS_POR_PAGINA_GRID_FROTA);
+
+            paginaAtualItens.forEach(c => {
                 const tipo = (c.tipo || (['TOCO','TRUCK','3/4','CARROCERIA'].includes(c.modelo) ? c.modelo : 'TOCO')).toUpperCase();
                 let tipoClass = "toco";
                 if (tipo === "TRUCK") tipoClass = "truck";
@@ -4059,11 +4561,45 @@
                 `;
                 grid.appendChild(card);
             });
+
+            renderizarPaginacaoGridFrota(filtrados.length, totalPaginasGrid);
+        }
+
+        function renderizarPaginacaoGridFrota(totalItens, totalPaginas) {
+            const container = document.getElementById("paginacaoGridFrota");
+            if (!container) return;
+
+            const inicio = (paginaGridFrotaAtual - 1) * ITENS_POR_PAGINA_GRID_FROTA + 1;
+            const fim = Math.min(paginaGridFrotaAtual * ITENS_POR_PAGINA_GRID_FROTA, totalItens);
+
+            let botoes = "";
+            for (let i = 1; i <= totalPaginas; i++) {
+                if (totalPaginas > 7 && i !== 1 && i !== totalPaginas && Math.abs(i - paginaGridFrotaAtual) > 1) {
+                    if (i === 2 || i === totalPaginas - 1) botoes += `<span class="px-1">...</span>`;
+                    continue;
+                }
+                botoes += `<button onclick="irParaPaginaGridFrota(${i})" class="px-2.5 py-1 rounded-lg text-xs font-medium ${i === paginaGridFrotaAtual ? 'bg-[#2b4068] text-white' : 'hover:bg-[#f9f8f5] text-[#5c5549]'}">${i}</button>`;
+            }
+
+            container.innerHTML = `
+                <span>Mostrando ${inicio}–${fim} de ${totalItens} veículos</span>
+                <div class="flex items-center gap-1">
+                    <button onclick="irParaPaginaGridFrota(${paginaGridFrotaAtual - 1})" ${paginaGridFrotaAtual === 1 ? 'disabled' : ''} class="px-2 py-1 rounded-lg hover:bg-[#f9f8f5] disabled:opacity-30 disabled:cursor-not-allowed"><i class="fa-solid fa-chevron-left"></i></button>
+                    ${botoes}
+                    <button onclick="irParaPaginaGridFrota(${paginaGridFrotaAtual + 1})" ${paginaGridFrotaAtual === totalPaginas ? 'disabled' : ''} class="px-2 py-1 rounded-lg hover:bg-[#f9f8f5] disabled:opacity-30 disabled:cursor-not-allowed"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            `;
+        }
+
+        function irParaPaginaGridFrota(pagina) {
+            paginaGridFrotaAtual = pagina;
+            renderizarGridFrota();
         }
 
         // FILTRO POR TIPO DE VEÍCULO NO GRID
         function filtrarGridFrotaPorTipo(tipo, elemento) {
             filtroTipoFrotaAtual = tipo;
+            paginaGridFrotaAtual = 1;
             const pills = document.querySelectorAll(".fleet-pill");
             pills.forEach(p => p.classList.remove("active"));
             if (elemento) elemento.classList.add("active");
@@ -4982,9 +5518,15 @@
 
             solicitarConfirmacaoAcao("Confirmar Registro de Vistoria", resumoHtml, () => {
                 const mmDesgastado = pneu.mm_inicial - mmLido;
-                pneu.mm_atual = mmLido;
-                pneu.anomalias = anoms;
-                pneu.operador_alteracao = usuarioLogado;
+
+                // Mesma regra do backend: vistoria de aprendiz fica pendente de aprovação e
+                // NÃO altera o pneu na hora (só depois que um supervisor aprovar). Pra qualquer
+                // outro perfil, aplica direto — o próximo resync confirma/ajusta os valores reais.
+                if (perfilLogado !== 'aprendiz') {
+                    pneu.mm_atual = mmLido;
+                    pneu.anomalias = anoms;
+                    pneu.operador_alteracao = usuarioLogado;
+                }
 
                 const obsString = (pneuConfirmadoState ? "" : "[ALERTA: PNEU NÃO CORRESPONDE AO CADASTRADO] ") + (anoms.length > 0 ? `Identificado: ${anoms.join(", ")}` : "Regular");
 
@@ -5010,6 +5552,9 @@
 
                 adicionarLog("UPDATE", `Lançamento de vistoria de pátio efetuada`, `FOGO #${fogo} sulco medido: ${mmLido}mm | Confirmado: ${pneuConfirmadoState ? "SIM" : "NÃO"}`);
                 enviarRequisicaoN8n("registrar_vistoria", { pneu: pneu, vistoria: nv });
+                if (perfilLogado === 'aprendiz') {
+                    mostrarToast("Vistoria enviada para revisão", "Como medição de aprendiz, o sulco só será aplicado ao pneu depois que um supervisor aprovar.", "info");
+                }
                 fecharModal('modalAcaoPneu');
                 carregarVeiculoVisualizer();
                 carregarTabelasEPanels();
@@ -5217,8 +5762,11 @@
                     const pIdx = pneus.findIndex(p => p.fogo === fogo);
                     const pneu = pneus[pIdx];
 
-                    pneu.mm_atual = mmLido;
-                    pneu.anomalias = anoms;
+                    // Mesma regra do registro individual e do backend: aprendiz não aplica direto no pneu
+                    if (perfilLogado !== 'aprendiz') {
+                        pneu.mm_atual = mmLido;
+                        pneu.anomalias = anoms;
+                    }
 
                     const mmDesgastado = pneu.mm_inicial - mmLido;
                     const kmRodado = kmAtual - kmAnterior;
@@ -5263,6 +5811,9 @@
                 });
 
                 enviarRequisicaoN8n("registrar_vistoria_completa", { frota: frota, km_atual: kmAtual, vistorias: vistoriasRealizadas });
+                if (perfilLogado === 'aprendiz') {
+                    mostrarToast("Vistorias enviadas para revisão", "Como medição de aprendiz, os sulcos só serão aplicados aos pneus depois que um supervisor aprovar.", "info");
+                }
 
                 // Loop sequential reset
                 if (document.getElementById("vistoriaLoopCheckbox") && document.getElementById("vistoriaLoopCheckbox").checked) {
@@ -5329,8 +5880,11 @@
         }
 
         // LOAD TIRES TIMELINE CYCLE
+        let pneuHistoricoAtual = null;
+
         function carregarHistoricoTire(fogo) {
             toggleHistoricoMobileView('detail');
+            pneuHistoricoAtual = fogo;
 
             const p = pneus.find(pn => pn.fogo === fogo);
             document.getElementById("historicoSemSelecao").style.display = "none";
@@ -5385,10 +5939,13 @@
 
             if (tireMovs.length === 0) {
                 timeline.innerHTML = "<div style='color:var(--text-muted); font-size:12px; padding:12px;'>Nenhuma movimentação registrada no histórico deste pneu.</div>";
+                renderizarGraficoCustoPneu(p, []);
                 return;
             }
 
             const sortedMovs = [...tireMovs].sort((a, b) => new Date(a.data_evento) - new Date(b.data_evento));
+
+            renderizarGraficoCustoPneu(p, sortedMovs);
 
             sortedMovs.forEach(m => {
                 const item = document.createElement("div");
@@ -5402,22 +5959,122 @@
 
                 item.classList.add(iconColor);
 
+                const status = m.status || "ATIVO";
+                const cancelado = status === "CANCELADO";
+                const badgeStatus = status === "CANCELADO"
+                    ? `<span style="font-size:9px; font-weight:700; padding:1px 6px; border-radius:999px; background:rgba(220,38,38,0.12); color:var(--danger); margin-left:6px;">CANCELADO</span>`
+                    : (status === "EDITADO" ? `<span style="font-size:9px; font-weight:700; padding:1px 6px; border-radius:999px; background:rgba(217,119,6,0.12); color:var(--warning); margin-left:6px;" title="${escapeHtml(m.motivo_edicao || '')}">EDITADO</span>` : '');
+
+                const podeEditar = temPermissao('editar_lancamento') && !cancelado;
+                const podeExcluir = temPermissao('excluir_lancamento') && !cancelado;
+                const foiEditado = status === "EDITADO" && m.dados_antes_edicao;
+                const acoesBtns = (podeEditar || podeExcluir || foiEditado) ? `
+                    <div style="display:flex; gap:6px; margin-top:6px;">
+                        ${podeEditar ? `<button onclick='abrirFormularioLancamento(${JSON.stringify(m).replace(/'/g, "&apos;")})' class="btn btn-secondary" style="padding:3px 9px; font-size:10.5px;"><i class="fa-solid fa-pen-to-square"></i> Editar</button>` : ''}
+                        ${podeExcluir ? `<button onclick="excluirLancamento('${escapeHtml(m.id_mov)}')" class="btn btn-danger" style="padding:3px 9px; font-size:10.5px;"><i class="fa-solid fa-trash-can"></i> Excluir</button>` : ''}
+                        ${foiEditado ? `<button onclick='abrirAuditoriaLancamento(${JSON.stringify(m).replace(/'/g, "&apos;")})' class="btn btn-secondary" style="padding:3px 9px; font-size:10.5px;"><i class="fa-solid fa-clock-rotate-left"></i> Ver alterações</button>` : ''}
+                    </div>
+                ` : '';
+
+                item.style.opacity = cancelado ? "0.55" : "1";
+
                 item.innerHTML = `
                     <div class="timeline-header">
-                        <span class="timeline-title">${m.tipo}</span>
+                        <span class="timeline-title">${m.tipo}${badgeStatus}</span>
                         <span>${m.data_evento}</span>
                     </div>
                     <div class="timeline-desc">
-                        ${m.motivo}<br>
+                        ${cancelado ? `<s>${m.motivo}</s>` : m.motivo}<br>
                         <span style="font-size:10px; color:var(--text-muted);">
                             ${m.frota ? `Veículo: ${m.frota} | Posição: ${m.posicao.replace(/_/g, " ")} <br>` : ''}
                             ${m.km_final > 0 ? `Quilometragem: ${m.km_final.toLocaleString('pt-BR')} km | Rodado no ciclo: ${m.km_rodado.toLocaleString('pt-BR')} km <br>` : ''}
                             ${m.mm_entrada > 0 ? `Sulcos: Entrada ${m.mm_entrada}mm ➔ Saída ${m.mm_saida}mm (Diferencial: ${(m.mm_entrada - m.mm_saida).toFixed(1)}mm) <br>` : ''}
                             Custo associado: R$ ${m.custo.toFixed(2)} | Operador: ${m.operador}
                         </span>
+                        ${acoesBtns}
                     </div>
                 `;
                 timeline.appendChild(item);
+            });
+        }
+
+        let chartCustoPneuInstancia = null;
+        let _ultimoGraficoCustoPneu = null; // guarda { pneu, movsOrdenadas } pra redesenhar ao trocar de tema
+
+        function renderizarGraficoCustoPneu(pneu, movsOrdenadas) {
+            const canvas = document.getElementById("histCustoChart");
+            if (!canvas) return;
+
+            _ultimoGraficoCustoPneu = { pneu, movsOrdenadas };
+
+            // Monta os pontos: começa com o valor de compra na data do NF/compra
+            const pontos = [];
+            let acumulado = pneu.valor_compra || 0;
+            const dataCompra = pneu.data_compra || (movsOrdenadas[0] ? movsOrdenadas[0].data_evento : null);
+            pontos.push({ label: dataCompra || "Compra", custo: acumulado, evento: "Compra" });
+
+            movsOrdenadas.forEach(m => {
+                if (m.custo && m.custo > 0) {
+                    acumulado += m.custo;
+                    pontos.push({ label: m.data_evento, custo: acumulado, evento: m.tipo });
+                }
+            });
+
+            if (chartCustoPneuInstancia) {
+                chartCustoPneuInstancia.destroy();
+            }
+
+            const estilos = getComputedStyle(document.documentElement);
+            const corLinha = estilos.getPropertyValue('--primary').trim() || '#2b4068';
+            const corTexto = estilos.getPropertyValue('--text-muted').trim() || '#7a7365';
+            const corGrid = estilos.getPropertyValue('--border').trim() || '#e2ddd2';
+            const corTooltipBg = estilos.getPropertyValue('--bg-card').trim() || '#ffffff';
+            const corTooltipTexto = estilos.getPropertyValue('--text-main').trim() || '#22201b';
+
+            chartCustoPneuInstancia = new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: pontos.map(p => p.label),
+                    datasets: [{
+                        label: 'Custo acumulado (R$)',
+                        data: pontos.map(p => p.custo),
+                        borderColor: corLinha,
+                        backgroundColor: corLinha + '22',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: corLinha
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: corTooltipBg,
+                            titleColor: corTooltipTexto,
+                            bodyColor: corTooltipTexto,
+                            borderColor: corGrid,
+                            borderWidth: 1,
+                            callbacks: {
+                                title: (items) => pontos[items[0].dataIndex].evento,
+                                label: (item) => "R$ " + item.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: corTexto },
+                            grid: { color: corGrid }
+                        },
+                        y: {
+                            ticks: { color: corTexto, callback: (v) => "R$ " + v.toLocaleString('pt-BR') },
+                            grid: { color: corGrid }
+                        }
+                    }
+                }
             });
         }
 
@@ -5504,11 +6161,11 @@
                 };
 
                 tr.innerHTML = `
-                    <td class="py-2.5 px-3" style="font-weight:700; color:#2b4068;">#${escapeHtml(c.frota)}</td>
-                    <td class="py-2.5 px-3" style="font-weight:600; font-family:monospace; font-size:12.5px; color:#22201b;">${escapeHtml(c.placa)}</td>
-                    <td class="py-2.5 px-3"><span class="badge ${tipoBadgeClass}" style="font-weight:700;">${escapeHtml(tipo)}</span></td>
-                    <td class="py-2.5 px-3" style="font-size:12px; color:#5c5549;">${escapeHtml(c.filial || 'DESTRO CASCAVEL')}</td>
-                    <td class="py-2.5 px-3" style="text-align:right; white-space:nowrap;">
+                    <td class="py-2.5 px-3" data-label="Frota" style="font-weight:700; color:#2b4068;">#${escapeHtml(c.frota)}</td>
+                    <td class="py-2.5 px-3" data-label="Placa" style="font-weight:600; font-family:monospace; font-size:12.5px; color:#22201b;">${escapeHtml(c.placa)}</td>
+                    <td class="py-2.5 px-3" data-label="Tipo"><span class="badge ${tipoBadgeClass}" style="font-weight:700;">${escapeHtml(tipo)}</span></td>
+                    <td class="py-2.5 px-3" data-label="Filial" style="font-size:12px; color:#5c5549;">${escapeHtml(c.filial || 'DESTRO CASCAVEL')}</td>
+                    <td class="py-2.5 px-3" data-label="Ações" style="text-align:right; white-space:nowrap;">
                         <button class="btn btn-secondary" onclick="event.stopPropagation(); abrirFormularioVeiculo(${idx})" style="padding:4px 8px; font-size:11px;" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
                         <button class="btn btn-danger" onclick="event.stopPropagation(); excluirVeiculo(${idx})" style="padding:4px 8px; font-size:11px;" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
                     </td>
@@ -5597,45 +6254,11 @@
 
         // SINCRONIZACAO DEDICADA DE FROTAS DO GOOGLE SHEETS
         function sincronizarFrotasGoogleSheets() {
-            mostrarToast("Sincronizando...", "Buscando veículos no Banco de Dados (Filtrando TOCO, TRUCK, 3/4, CARROCERIA)...", "warning");
-            adicionarLog("SHEETS", "Sincronização de frotas iniciada", "Buscando planilha VEICULOS no Google Sheets...");
-
-            const payload = {
-                action: "buscar_frotas_sheets",
-                token: sessionToken,
-                sheetName: "VEICULOS",
-                timestamp: new Date().toISOString()
-            };
-
-            fetch(N8N_WEBHOOK_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            })
-            .then(res => {
-                if (res.ok) {
-                    return res.json().then(serverRes => {
-                        const listaRecebida = serverRes.caminhoes || serverRes.veiculos_filtrados || (serverRes.result && (serverRes.result.caminhoes || serverRes.result.veiculos_filtrados));
-                        if (listaRecebida && Array.isArray(listaRecebida) && listaRecebida.length > 0) {
-                            caminhoes = listaRecebida;
-                            carregarTabelaFrotas();
-                            inicializarFrotaDropdown();
-                            mostrarToast("Frotas Atualizadas!", `${caminhoes.length} veículos (TOCO, TRUCK, 3/4, CARROCERIA) carregados do Banco de Dados com sucesso.`, "success");
-                            adicionarLog("SUCCESS", "Frotas PostgreSQL Atualizadas", `${caminhoes.length} veículos operacionais carregados.`);
-                        } else {
-                            carregarTabelaFrotas();
-                            mostrarToast("Frotas Sincronizadas", `${caminhoes.length} veículos disponíveis no sistema.`, "success");
-                        }
-                    });
-                } else {
-                    mostrarToast("Conexão n8n", "Frotas carregadas com base na última sincronização local.", "info");
-                }
-            })
-            .catch(err => {
-                console.warn("N8n offline ou CORS ativo:", err);
-                carregarTabelaFrotas();
-                mostrarToast("Frotas Ativas", `${caminhoes.length} veículos (TOCO, TRUCK, 3/4, CARROCERIA) carregados localmente.`, "info");
-            });
+            // Antes chamava a ação "buscar_frotas_sheets", que nunca existiu no workflow
+            // (resquício de uma versão antiga com Google Sheets) -- o botão nunca funcionava
+            // de verdade. Agora usa a sincronização real, que já traz a frota atualizada.
+            sincronizarBancoDeDados(true);
+            carregarTabelaFrotas();
         }
 
         // GESTÃO DE FROTAS: FILTER SEARCH AUTOMATION
@@ -6001,7 +6624,7 @@
                                         loginOverlay.style.opacity = "1";
                                     }
                                 }, 500);
-                                mostrarToast("Banco de Dados Conectado" , "Conectado à aba USUARIOS do Google Sheets via n8n.", "success");
+                                mostrarToast("Banco de Dados Conectado" , "Conectado ao Banco de Dados PostgreSQL via n8n.", "success");
                                 adicionarLog("SYSTEM", "Conexão de inicialização aprovada", "Módulo de credenciais integrado ao n8n.");
                             }, 400);
                         }
@@ -6287,32 +6910,42 @@
             document.getElementById("syncLoadingOverlay").style.display = "flex";
 
             const pIdx = pneus.findIndex(p => p.fogo === fogo);
-            if (pIdx !== -1) {
-                pneus[pIdx].situacao = "RECAPADO";
-                pneus[pIdx].status_atual = "ESTOQUE";
-                pneus[pIdx].recape_atual = novoRecape;
-                pneus[pIdx].mm_atual = novoSulco;
-                pneus[pIdx].valor_recapes = (pneus[pIdx].valor_recapes || 0) + custoRecape;
-                pneus[pIdx].caminhao_atual = "";
-                pneus[pIdx].posicao_atual = "";
+            if (pIdx === -1) {
+                mostrarToast("Pneu não encontrado na lista local.", "error");
+                document.getElementById("syncLoadingOverlay").style.display = "none";
+                return;
             }
 
-            const payload = {
-                fogo: fogo,
-                data: {
-                    pneu: {
-                        fogo: fogo,
-                        recape_atual: novoRecape,
-                        mm_atual: novoSulco,
-                        valor_recapes: (pneus[pIdx].valor_recapes || 0)
-                    }
-                },
-                operator: document.getElementById("desktopUserTag").innerText,
-                action: "recapar_pneu_retorno"
-            };
+            const mmAntesRecape = pneus[pIdx].mm_atual;
+            pneus[pIdx].situacao = "RECAPADO";
+            pneus[pIdx].status_atual = "ESTOQUE";
+            pneus[pIdx].recape_atual = novoRecape;
+            pneus[pIdx].mm_inicial = novoSulco;
+            pneus[pIdx].mm_atual = novoSulco;
+            pneus[pIdx].valor_recapes = (pneus[pIdx].valor_recapes || 0) + custoRecape;
+            pneus[pIdx].operador_alteracao = usuarioLogado;
+            pneus[pIdx].caminhao_atual = "";
+            pneus[pIdx].posicao_atual = "";
 
-            enviarRequisicaoN8n("recapar_pneu_retorno", payload)
+            const movRecape = {
+                id_mov: "m_" + Date.now() + "_" + fogo,
+                fogo: fogo,
+                tipo: "RECAPE",
+                frota: "",
+                posicao: "",
+                data_evento: new Date().toISOString().split('T')[0],
+                km_inicial: 0, km_final: 0, km_rodado: 0,
+                mm_entrada: mmAntesRecape, mm_saida: novoSulco,
+                motivo: `Retorno de recape (${novoRecape}ª vida). Custo: R$ ${custoRecape.toFixed(2)}`,
+                custo: custoRecape,
+                operador: usuarioLogado
+            };
+            movimentacoes.push(movRecape);
+            adicionarLog("UPDATE", `Retorno de recape registrado`, `FOGO #${fogo} voltou ao estoque com sulco ${novoSulco}mm (${novoRecape}ª vida)`);
+
+            enviarRequisicaoN8n("recapar_pneu_retorno", { pneu: pneus[pIdx], movimentacao: movRecape })
                 .then(res => {
+                    if (res && res.success === false) return; // enviarRequisicaoN8n já mostrou o motivo da recusa
                     mostrarToast(`Pneu #${fogo} retornou do recape para estoque com sucesso!`, "success");
                     fecharModal('modalAcaoPneu');
                     carregarTabelasEPanels();
@@ -6410,32 +7043,32 @@
             document.getElementById("syncLoadingOverlay").style.display = "flex";
 
             const pIdx = pneus.findIndex(p => p.fogo === fogo);
-            if (pIdx !== -1) {
-                pneus[pIdx].marca = marca;
-                pneus[pIdx].modelo = modelo;
-                pneus[pIdx].medida = medida;
-                pneus[pIdx].dot = dot;
-                pneus[pIdx].valor_compra = valorCompra;
-                pneus[pIdx].filial = filial;
+            if (pIdx === -1) {
+                mostrarToast("Pneu não encontrado na lista local.", "error");
+                document.getElementById("syncLoadingOverlay").style.display = "none";
+                return;
             }
 
-            const payload = {
-                fogo: fogo,
-                data: {
-                    filial: filial,
-                    marca: marca,
-                    modelo: modelo,
-                    medida: medida,
-                    dot: dot,
-                    valor_compra: valorCompra,
-                    valor_recapes: pneus[pIdx].valor_recapes || 0
-                },
-                operator: document.getElementById("desktopUserTag").innerText,
-                action: "editar_pneu"
-            };
+            const valorRecapesAtual = pneus[pIdx].valor_recapes || 0;
+            pneus[pIdx].marca = marca;
+            pneus[pIdx].modelo = modelo;
+            pneus[pIdx].medida = medida;
+            pneus[pIdx].dot = dot;
+            pneus[pIdx].valor_compra = valorCompra;
+            pneus[pIdx].filial = filial;
 
-            enviarRequisicaoN8n("editar_pneu", payload)
+            enviarRequisicaoN8n("editar_pneu", {
+                fogo: fogo,
+                filial: filial,
+                marca: marca,
+                modelo: modelo,
+                medida: medida,
+                dot: dot,
+                valor_compra: valorCompra,
+                valor_recapes: valorRecapesAtual
+            })
                 .then(res => {
+                    if (res && res.success === false) return; // enviarRequisicaoN8n já mostrou o motivo da recusa
                     mostrarToast(`Cadastro do pneu #${fogo} atualizado no banco de dados!`, "success");
                     fecharModal('modalAcaoPneu');
                     carregarTabelasEPanels();
@@ -6461,14 +7094,9 @@
 
             document.getElementById("syncLoadingOverlay").style.display = "flex";
 
-            const idx = pneus.findIndex(p => p.fogo === fogo);
-            if (idx !== -1) {
-                pneus.splice(idx, 1);
-            }
-
-            enviarRequisicaoN8n("excluir_pneu", { fogo: fogo, action: "excluir_pneu" })
+            enviarRequisicaoN8n("excluir_pneu", { fogo: fogo })
                 .then(res => {
-                    mostrarToast(`Pneu #${fogo} excluído com sucesso do Sheets!`, "success");
+                    if (res && res.success === false) return; // enviarRequisicaoN8n já mostrou o motivo da recusa (ex: pneu montado)
                     carregarTabelasEPanels();
                     if (document.getElementById("modalKpiPneus").style.display === "flex" && activeKpiStatus) {
                         abrirKpiModal(activeKpiStatus);
@@ -6701,19 +7329,301 @@
             if (typeof carregarHistoricoTire === "function") carregarHistoricoTire(fogo);
         }
 
+        // ====================================================
+        // REVISÃO DE VISTORIAS PENDENTES (MEDIDAS POR APRENDIZ)
+        // ====================================================
+        function renderizarPainelRevisaoPendente() {
+            const painel = document.getElementById("painelRevisaoPendente");
+            const lista = document.getElementById("listaRevisaoPendente");
+            if (!painel || !lista) return;
+
+            const pendentes = (vistorias || []).filter(v => v.status_revisao === "PENDENTE");
+
+            if (pendentes.length === 0 || !temPermissao('revisar_vistoria')) {
+                painel.classList.add("hidden");
+                return;
+            }
+
+            painel.classList.remove("hidden");
+            lista.innerHTML = pendentes.map(v => `
+                <div class="flex items-center justify-between gap-3 bg-white rounded-xl border border-amber-200 p-3">
+                    <div class="min-w-0 text-xs">
+                        <div class="font-semibold text-[#22201b]">Fogo #${escapeHtml(v.fogo)} — Frota #${escapeHtml(v.frota || '-')}</div>
+                        <div class="text-[#7a7365] mt-0.5">Medido em ${escapeHtml(v.data_vistoria)} por ${escapeHtml(v.responsavel || v.operador || 'aprendiz')} · Sulco: ${v.mm_medido} mm</div>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <button onclick="revisarVistoria('${escapeHtml(v.id_vistoria)}', 'APROVADA')" class="btn btn-success" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-check"></i> Aprovar</button>
+                        <button onclick="revisarVistoria('${escapeHtml(v.id_vistoria)}', 'CORRIGIDA')" class="btn btn-secondary" style="padding:5px 10px; font-size:11px;"><i class="fa-solid fa-pen"></i> Marcar p/ correção</button>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        async function revisarVistoria(idVistoria, statusRevisao) {
+            let observacao = "";
+            if (statusRevisao === "CORRIGIDA") {
+                observacao = prompt("O que precisa ser corrigido nessa vistoria?") || "";
+                if (observacao === null) return;
+            }
+
+            const resposta = await enviarRequisicaoN8n("revisar_vistoria", {
+                id_vistoria: idVistoria,
+                status_revisao: statusRevisao,
+                observacao_revisao: observacao
+            });
+
+            if (resposta && resposta.success !== false) {
+                renderizarPainelRevisaoPendente();
+            }
+        }
+
+        // ====================================================
+        // AUDITORIA DE EDIÇÃO — MOSTRA O QUE MUDOU (ANTES/DEPOIS)
+        // ====================================================
+        const CAMPOS_AUDITORIA_LABEL = {
+            data_evento: "Data do evento", km_inicial: "KM inicial", km_final: "KM final",
+            km_rodado: "KM rodado", mm_entrada: "Sulco entrada (mm)", mm_saida: "Sulco saída (mm)",
+            custo: "Custo (R$)", motivo: "Motivo"
+        };
+
+        function abrirAuditoriaLancamento(m) {
+            const antes = m.dados_antes_edicao || {};
+            const conteudo = document.getElementById("auditoriaConteudo");
+
+            const linhas = Object.keys(CAMPOS_AUDITORIA_LABEL).map(campo => {
+                const valorAntes = antes[campo];
+                const valorDepois = m[campo];
+                const mudou = String(valorAntes ?? '') !== String(valorDepois ?? '');
+                if (valorAntes === undefined) return '';
+
+                return `
+                    <div style="display:grid; grid-template-columns: 1fr auto 1fr; gap:8px; align-items:center; padding:6px 0; ${mudou ? 'background:rgba(217,119,6,0.06); border-radius:8px; padding-left:8px; padding-right:8px;' : ''}">
+                        <div>
+                            <div style="font-size:10px; color:var(--text-muted); text-transform:uppercase; font-weight:700;">${CAMPOS_AUDITORIA_LABEL[campo]}</div>
+                            <div style="font-size:13px; color:${mudou ? 'var(--danger)' : 'var(--text-main)'}; text-decoration:${mudou ? 'line-through' : 'none'};">${escapeHtml(String(valorAntes ?? '-'))}</div>
+                        </div>
+                        <i class="fa-solid fa-arrow-right" style="color:var(--text-muted); font-size:11px;"></i>
+                        <div style="font-size:13px; font-weight:${mudou ? '700' : '400'}; color:${mudou ? 'var(--success)' : 'var(--text-main)'};">${escapeHtml(String(valorDepois ?? '-'))}</div>
+                    </div>
+                `;
+            }).join("");
+
+            conteudo.innerHTML = `
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+                    ${m.editado_em ? 'Editado em ' + escapeHtml(String(m.editado_em)) : 'Editado'}
+                </div>
+                ${m.motivo_edicao ? `<div style="font-size:12px; background:var(--bg-card-hover); border-radius:8px; padding:8px 10px; margin-bottom:10px;"><strong>Motivo informado:</strong> ${escapeHtml(m.motivo_edicao)}</div>` : ''}
+                <div style="border-top:1px solid var(--border);">${linhas || '<div style="padding:12px 0; color:var(--text-muted); font-size:12px;">Sem detalhes de campos anteriores registrados.</div>'}</div>
+            `;
+            document.getElementById("modalAuditoria").style.display = "flex";
+        }
+
+        function abrirFormularioLancamento(m) {
+            document.getElementById("lancFormIdMov").value = m.id_mov;
+            document.getElementById("lancFormData").value = m.data_evento ? String(m.data_evento).split("T")[0] : "";
+            document.getElementById("lancFormKmInicial").value = m.km_inicial || 0;
+            document.getElementById("lancFormKmFinal").value = m.km_final || 0;
+            document.getElementById("lancFormMmEntrada").value = m.mm_entrada || 0;
+            document.getElementById("lancFormMmSaida").value = m.mm_saida || 0;
+            document.getElementById("lancFormCusto").value = m.custo || 0;
+            document.getElementById("lancFormMotivo").value = m.motivo || "";
+            document.getElementById("lancFormMotivoEdicao").value = "";
+            document.getElementById("modalLancamento").style.display = "flex";
+        }
+
+        async function salvarEdicaoLancamento() {
+            const idMov = document.getElementById("lancFormIdMov").value;
+            const motivoEdicao = document.getElementById("lancFormMotivoEdicao").value.trim();
+
+            if (!motivoEdicao) {
+                mostrarToast("Campo obrigatório", "Descreva o motivo da edição para manter o histórico de auditoria.", "error");
+                return;
+            }
+
+            const lancamento = {
+                id_mov: idMov,
+                data_evento: document.getElementById("lancFormData").value,
+                km_inicial: parseFloat(document.getElementById("lancFormKmInicial").value) || 0,
+                km_final: parseFloat(document.getElementById("lancFormKmFinal").value) || 0,
+                km_rodado: (parseFloat(document.getElementById("lancFormKmFinal").value) || 0) - (parseFloat(document.getElementById("lancFormKmInicial").value) || 0),
+                mm_entrada: parseFloat(document.getElementById("lancFormMmEntrada").value) || 0,
+                mm_saida: parseFloat(document.getElementById("lancFormMmSaida").value) || 0,
+                custo: parseFloat(document.getElementById("lancFormCusto").value) || 0,
+                motivo: document.getElementById("lancFormMotivo").value,
+                motivo_edicao: motivoEdicao
+            };
+
+            const resposta = await enviarRequisicaoN8n("editar_lancamento", { lancamento });
+            if (resposta && resposta.success !== false) {
+                fecharModal("modalLancamento");
+                if (pneuHistoricoAtual) carregarHistoricoTire(pneuHistoricoAtual);
+            }
+        }
+
+        async function excluirLancamento(idMov) {
+            const confirmado = await confirmarAcao(
+                "Excluir lançamento",
+                "Esse lançamento será marcado como cancelado e sai dos cálculos do pneu, mas continua visível no histórico para auditoria. Deseja continuar?",
+                "Excluir"
+            );
+            if (!confirmado) return;
+
+            const resposta = await enviarRequisicaoN8n("excluir_lancamento", { id_mov: idMov, motivo: "Excluído via timeline do histórico" });
+            if (resposta && resposta.success !== false) {
+                if (pneuHistoricoAtual) carregarHistoricoTire(pneuHistoricoAtual);
+            }
+        }
+        let usuariosCache = [];
+        const LABELS_PERFIL = { administrador: "Administrador", operador: "Operador", aprendiz: "Aprendiz" };
+        const CORES_PERFIL = { administrador: "background:rgba(43,64,104,0.12); color:var(--primary);", operador: "background:rgba(22,163,74,0.12); color:var(--success);", aprendiz: "background:rgba(217,119,6,0.12); color:var(--warning);" };
+
+        async function carregarUsuarios() {
+            const container = document.getElementById("usuariosListaContainer");
+            if (!container) return;
+
+            if (perfilLogado !== "administrador") {
+                container.innerHTML = `<div class="text-center py-8 text-[#7a7365]">Acesso restrito a administradores.</div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="text-center py-8 text-[#7a7365]">Carregando usuários...</div>`;
+
+            try {
+                const resposta = await enviarRequisicaoN8n("listar_usuarios", {});
+                if (!resposta || resposta.success === false || !Array.isArray(resposta.usuarios)) {
+                    const detalhe = resposta && resposta.message ? ` (${escapeHtml(resposta.message)})` : '';
+                    container.innerHTML = `<div class="text-center py-8 text-[#7a7365]">Não foi possível carregar a lista de usuários${detalhe}.</div>`;
+                    return;
+                }
+                usuariosCache = resposta.usuarios;
+                renderizarListaUsuarios();
+            } catch (err) {
+                console.error("Erro ao carregar usuários:", err);
+                container.innerHTML = `<div class="text-center py-8 text-[#7a7365]">Erro inesperado ao carregar usuários. Veja o console (F12) para detalhes.</div>`;
+            }
+        }
+
+        function renderizarListaUsuarios() {
+            const container = document.getElementById("usuariosListaContainer");
+            if (usuariosCache.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-[#7a7365]">Nenhum usuário cadastrado.</div>`;
+                return;
+            }
+
+            container.innerHTML = usuariosCache.map(u => {
+                const perms = u.permissoes || {};
+                const permsAtivas = Object.keys(perms).filter(k => perms[k] === true);
+                const permsLabel = {
+                    excluir_veiculo: "Excluir veículo", excluir_pneu: "Excluir pneu",
+                    excluir_lancamento: "Excluir lançamento", editar_lancamento: "Editar lançamento",
+                    revisar_vistoria: "Revisar vistoria"
+                };
+
+                return `
+                    <div class="flex items-center justify-between gap-3 p-3 border border-[#e2ddd2] rounded-xl">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-semibold text-[#22201b]">${escapeHtml(u.nome)}</span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="${CORES_PERFIL[u.perfil] || ''}">${LABELS_PERFIL[u.perfil] || u.perfil}</span>
+                            </div>
+                            <div class="text-[11px] text-[#7a7365] mt-1">
+                                ${u.perfil === 'administrador' ? 'Acesso total' : (permsAtivas.length > 0 ? permsAtivas.map(k => permsLabel[k] || k).join(' · ') : 'Sem permissões extras')}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button onclick='abrirFormularioUsuario(${JSON.stringify(u).replace(/'/g, "&apos;")})' class="btn btn-secondary" style="padding:6px 10px; font-size:11px;" title="Editar">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="excluirUsuarioAdmin('${escapeHtml(u.nome)}')" class="btn btn-danger" style="padding:6px 10px; font-size:11px;" title="Excluir">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+        }
+
+        function abrirFormularioUsuario(usuario) {
+            const editando = !!(usuario && usuario.nome);
+            document.getElementById("modalUsuarioTitulo").innerText = editando ? `Editar Usuário — ${usuario.nome}` : "Novo Usuário";
+            document.getElementById("usuarioFormNomeOriginal").value = editando ? usuario.nome : "";
+            document.getElementById("usuarioFormNome").value = editando ? usuario.nome : "";
+            document.getElementById("usuarioFormNome").disabled = editando; // nome é a chave, não deixa trocar em edição
+            document.getElementById("usuarioFormSenha").value = "";
+            document.getElementById("usuarioFormPerfil").value = editando ? (usuario.perfil || "operador") : "operador";
+
+            const perms = (editando && usuario.permissoes) ? usuario.permissoes : {};
+            ["excluir_veiculo", "excluir_pneu", "excluir_lancamento", "editar_lancamento", "revisar_vistoria"].forEach(chave => {
+                const el = document.getElementById("perm_" + chave);
+                if (el) el.checked = perms[chave] === true;
+            });
+
+            atualizarVisibilidadePermissoesForm();
+            document.getElementById("modalUsuario").style.display = "flex";
+        }
+
+        function atualizarVisibilidadePermissoesForm() {
+            const perfil = document.getElementById("usuarioFormPerfil").value;
+            const bloco = document.getElementById("usuarioFormPermissoesBloco");
+            bloco.classList.toggle("hidden", perfil === "administrador");
+        }
+
+        async function salvarUsuario() {
+            const nomeOriginal = document.getElementById("usuarioFormNomeOriginal").value;
+            const nome = document.getElementById("usuarioFormNome").value.trim();
+            const senha = document.getElementById("usuarioFormSenha").value;
+            const perfil = document.getElementById("usuarioFormPerfil").value;
+
+            if (!nome) {
+                mostrarToast("Campo obrigatório", "Informe o nome de usuário.", "error");
+                return;
+            }
+            if (!nomeOriginal && !senha) {
+                mostrarToast("Campo obrigatório", "Defina uma senha para o novo usuário.", "error");
+                return;
+            }
+
+            const permissoes = {};
+            ["excluir_veiculo", "excluir_pneu", "excluir_lancamento", "editar_lancamento", "revisar_vistoria"].forEach(chave => {
+                const el = document.getElementById("perm_" + chave);
+                if (el && el.checked) permissoes[chave] = true;
+            });
+
+            const resposta = await enviarRequisicaoN8n("save_usuario", { nome, senha, perfil, permissoes });
+            if (resposta && resposta.success !== false) {
+                fecharModal("modalUsuario");
+                carregarUsuarios();
+            }
+        }
+
+        async function excluirUsuarioAdmin(nome) {
+            if (nome === usuarioLogado) {
+                mostrarToast("Ação bloqueada", "Você não pode excluir o próprio usuário logado.", "error");
+                return;
+            }
+            const confirmado = await confirmarAcao("Excluir usuário", `Tem certeza que deseja excluir o usuário "${nome}"? Essa ação não pode ser desfeita.`);
+            if (!confirmado) return;
+
+            const resposta = await enviarRequisicaoN8n("excluir_usuario", { nome });
+            if (resposta && resposta.success !== false) {
+                carregarUsuarios();
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             renderizarLogs();
             inicializarTema();
             inicializarAtalhoBuscaGlobal();
+            restaurarSessaoStorage();
         });
 
         // ====================================================
         // TEMA CLARO/ESCURO
         // ====================================================
         function inicializarTema() {
+            // Padrão é sempre modo claro; só muda se o usuário já tiver escolhido antes nesse navegador.
             const salvo = localStorage.getItem('aconpneus_tema');
-            const preferido = salvo || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            aplicarTema(preferido);
+            aplicarTema(salvo === 'dark' ? 'dark' : 'light');
         }
 
         function aplicarTema(tema) {
@@ -6729,6 +7639,11 @@
         function alternarTema() {
             const atual = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
             aplicarTema(atual === 'dark' ? 'light' : 'dark');
+
+            // Redesenha o gráfico de custo do pneu (se estiver aberto) com as cores do novo tema
+            if (_ultimoGraficoCustoPneu) {
+                renderizarGraficoCustoPneu(_ultimoGraficoCustoPneu.pneu, _ultimoGraficoCustoPneu.movsOrdenadas);
+            }
         }
 
         // MULTIPLE ROWS LOTE GRID GENERATOR (Ideia 4)
@@ -6843,25 +7758,33 @@
             })
                 .then(res => {
                     resolver();
-                    if (res.ok) {
+                    if (!res.ok) {
+                        if (manual) mostrarToast("Aviso de Sincronia", "Dados de pátio locais validados e gravados.", "info");
+                        return;
+                    }
+
+                    return res.json().catch(() => ({})).then(serverData => {
+                        if (serverData && (serverData.success === false || serverData.sessionExpired === true)) {
+                            if (serverData.sessionExpired === true) {
+                                forcarLogoutPorSessaoExpirada();
+                            } else if (manual) {
+                                mostrarToast("Sincronização recusada", serverData.message || "O servidor recusou a sincronização.", "error");
+                            }
+                            return;
+                        }
+
                         mostrarToast("Base Sincronizada", "Conexão de auditoria estabelecida com o Banco de Dados PostgreSQL.", "success");
                         adicionarLog("SHEETS", `Sincronização geral de tabelas PostgreSQL efetuada`, "Dados integrados: VEICULOS, PNEUS_CADASTRO, MOVIMENTACOES, VISTORIAS_PATIO, USUARIOS");
 
-                        return res.json().then(serverData => {
-                            // Hydrate client memory dynamic data if n8n returns latest state sheets
-                            if (serverData && serverData.pneus) pneus = serverData.pneus;
-                            if (serverData && serverData.caminhoes) caminhoes = serverData.caminhoes;
-                            if (serverData && serverData.movimentacoes) movimentacoes = serverData.movimentacoes;
-                            if (serverData && serverData.vistorias) vistorias = serverData.vistorias;
+                        // Hydrate client memory dynamic data if n8n returns latest state sheets
+                        if (serverData && serverData.pneus) pneus = serverData.pneus;
+                        if (serverData && serverData.caminhoes) caminhoes = serverData.caminhoes;
+                        if (serverData && serverData.movimentacoes) movimentacoes = serverData.movimentacoes;
+                        if (serverData && serverData.vistorias) vistorias = serverData.vistorias;
 
-                            carregarTabelasEPanels();
-                            gerarListaSidebarHistorico();
-                        }).catch(e => {
-                            // Res solved but no JSON or empty response, no action needed, safe
-                        });
-                    } else {
-                        if (manual) mostrarToast("Aviso de Sincronia", "Dados de pátio locais validados e gravados.", "info");
-                    }
+                        carregarTabelasEPanels();
+                        gerarListaSidebarHistorico();
+                    });
                 })
                 .catch(err => {
                     resolver();
@@ -7154,7 +8077,7 @@
                 };
                 movimentacoes.push(dMov);
 
-                enviarRequisicaoN8n("excluir_pneu", { pneu: pneu, movimentacao: dMov });
+                enviarRequisicaoN8n("retirar_pneu", { pneu: pneu, movimentacao: dMov });
 
                 fecharModal("modalDescarteDossie");
                 mostrarToast("Ativo Sucateado", `O pneu #${pneu.fogo} foi movido para descarte.`, "success");
@@ -8075,6 +8998,126 @@
             </div>
             <div id="resultadosBuscaGlobal" class="max-h-[50vh] overflow-y-auto custom-scrollbar">
                 <div class="p-6 text-center text-xs text-[#7a7365]">Digite para buscar em toda a frota e no estoque de pneus.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE AUDITORIA DE EDIÇÃO (ANTES/DEPOIS) -->
+    <div id="modalAuditoria" class="modal-overlay fixed inset-0 z-[9992] backdrop-blur-custom flex items-center justify-center p-4" style="display:none;">
+        <div class="bg-white rounded-2xl border border-[#e2ddd2] shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="p-5 border-b border-[#e2ddd2] flex items-center justify-between">
+                <h3 class="text-base font-bold text-[#22201b]"><i class="fa-solid fa-clock-rotate-left text-amber-600 mr-1.5"></i> Histórico de Alteração</h3>
+                <button onclick="fecharModal('modalAuditoria')" class="text-[#7a7365] hover:text-[#22201b]"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="auditoriaConteudo" class="p-5 space-y-3"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EDITAR LANÇAMENTO (MOVIMENTAÇÃO) -->
+    <div id="modalLancamento" class="modal-overlay fixed inset-0 z-[9993] backdrop-blur-custom flex items-center justify-center p-4" style="display:none;">
+        <div class="bg-white rounded-2xl border border-[#e2ddd2] shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="p-5 border-b border-[#e2ddd2] flex items-center justify-between">
+                <h3 class="text-base font-bold text-[#22201b]">Editar Lançamento</h3>
+                <button onclick="fecharModal('modalLancamento')" class="text-[#7a7365] hover:text-[#22201b]"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-3">
+                <input type="hidden" id="lancFormIdMov" value="">
+                <div>
+                    <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">Data do evento</label>
+                    <input type="date" id="lancFormData" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b]">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">KM inicial</label>
+                        <input type="number" step="0.01" id="lancFormKmInicial" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b]">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">KM final</label>
+                        <input type="number" step="0.01" id="lancFormKmFinal" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b]">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">Sulco entrada (mm)</label>
+                        <input type="number" step="0.01" id="lancFormMmEntrada" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b]">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">Sulco saída (mm)</label>
+                        <input type="number" step="0.01" id="lancFormMmSaida" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b]">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">Custo (R$)</label>
+                    <input type="number" step="0.01" id="lancFormCusto" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b]">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">Motivo / descrição</label>
+                    <textarea id="lancFormMotivo" rows="2" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b]"></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">Motivo da edição <span class="font-normal text-[#7a7365]">(fica no histórico de auditoria)</span></label>
+                    <input type="text" id="lancFormMotivoEdicao" placeholder="Ex: corrigido KM digitado errado" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b]">
+                </div>
+            </div>
+            <div class="flex border-t border-[#e2ddd2]">
+                <button onclick="fecharModal('modalLancamento')" class="flex-1 py-3 text-xs font-semibold text-[#5c5549] hover:bg-[#f9f8f5] transition-colors">Cancelar</button>
+                <button onclick="salvarEdicaoLancamento()" class="flex-1 py-3 text-xs font-semibold text-white bg-[#2b4068] hover:bg-[#223250] transition-colors">Salvar Edição</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CRIAR/EDITAR USUÁRIO -->
+    <div id="modalUsuario" class="modal-overlay fixed inset-0 z-[9994] backdrop-blur-custom flex items-center justify-center p-4" style="display:none;">
+        <div class="bg-white rounded-2xl border border-[#e2ddd2] shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="p-5 border-b border-[#e2ddd2] flex items-center justify-between">
+                <h3 id="modalUsuarioTitulo" class="text-base font-bold text-[#22201b]">Novo Usuário</h3>
+                <button onclick="fecharModal('modalUsuario')" class="text-[#7a7365] hover:text-[#22201b]"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <input type="hidden" id="usuarioFormNomeOriginal" value="">
+                <div>
+                    <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">Nome de usuário</label>
+                    <input type="text" id="usuarioFormNome" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b] focus:ring-2 focus:ring-[#2b4068]" placeholder="ex: joao.silva">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">Senha</label>
+                    <input type="password" id="usuarioFormSenha" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b] focus:ring-2 focus:ring-[#2b4068]" placeholder="Deixe em branco para não alterar">
+                    <p class="text-[11px] text-[#7a7365] mt-1">Em edições, deixe em branco pra manter a senha atual.</p>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-[#5c5549] block mb-1.5">Perfil</label>
+                    <select id="usuarioFormPerfil" onchange="atualizarVisibilidadePermissoesForm()" class="w-full bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-3 py-2 text-sm text-[#22201b]">
+                        <option value="administrador">Administrador (acesso total)</option>
+                        <option value="operador" selected>Operador</option>
+                        <option value="aprendiz">Aprendiz (menor aprendiz)</option>
+                    </select>
+                </div>
+
+                <div id="usuarioFormPermissoesBloco" class="border-t border-[#e2ddd2] pt-3">
+                    <div class="text-xs font-semibold text-[#5c5549] mb-2">Permissões extras de exclusão/edição</div>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2.5 text-xs text-[#22201b]">
+                            <input type="checkbox" id="perm_excluir_veiculo" class="rounded"> Pode excluir veículo
+                        </label>
+                        <label class="flex items-center gap-2.5 text-xs text-[#22201b]">
+                            <input type="checkbox" id="perm_excluir_pneu" class="rounded"> Pode excluir pneu
+                        </label>
+                        <label class="flex items-center gap-2.5 text-xs text-[#22201b]">
+                            <input type="checkbox" id="perm_excluir_lancamento" class="rounded"> Pode excluir lançamento (movimentação)
+                        </label>
+                        <label class="flex items-center gap-2.5 text-xs text-[#22201b]">
+                            <input type="checkbox" id="perm_editar_lancamento" class="rounded"> Pode editar lançamento (movimentação)
+                        </label>
+                        <label class="flex items-center gap-2.5 text-xs text-[#22201b]">
+                            <input type="checkbox" id="perm_revisar_vistoria" class="rounded"> Pode revisar vistorias de aprendiz
+                        </label>
+                    </div>
+                    <p class="text-[11px] text-[#7a7365] mt-2">Excluir/criar usuário fica sempre restrito a administrador, independente destas caixas.</p>
+                </div>
+            </div>
+            <div class="flex border-t border-[#e2ddd2]">
+                <button onclick="fecharModal('modalUsuario')" class="flex-1 py-3 text-xs font-semibold text-[#5c5549] hover:bg-[#f9f8f5] transition-colors">Cancelar</button>
+                <button onclick="salvarUsuario()" class="flex-1 py-3 text-xs font-semibold text-white bg-[#2b4068] hover:bg-[#223250] transition-colors">Salvar</button>
             </div>
         </div>
     </div>
