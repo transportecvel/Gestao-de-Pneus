@@ -651,8 +651,8 @@
             </div>
             <form onsubmit="realizarAutenticacao(event)" class="space-y-4">
                 <div>
-                    <label for="loginUser" class="block text-xs font-bold text-[#5c5549] uppercase tracking-wider mb-1.5">Usuário / Matrícula</label>
-                    <input type="text" id="loginUser" required class="w-full bg-[#ffffff] border border-[#e2ddd2] rounded-xl px-3.5 py-2.5 text-sm text-[#22201b] focus:outline-none focus:ring-2 focus:ring-[#2b4068] transition-all" placeholder="Ex: frotas ou admin">
+                    <label for="loginUser" class="block text-xs font-bold text-[#5c5549] uppercase tracking-wider mb-1.5">E-mail</label>
+                    <input type="email" id="loginUser" required class="w-full bg-[#ffffff] border border-[#e2ddd2] rounded-xl px-3.5 py-2.5 text-sm text-[#22201b] focus:outline-none focus:ring-2 focus:ring-[#2b4068] transition-all" placeholder="seu.nome@silens.com.br">
                 </div>
                 <div>
                     <label for="loginPassword" class="block text-xs font-bold text-[#5c5549] uppercase tracking-wider mb-1.5">Senha de Acesso</label>
@@ -2050,6 +2050,11 @@
 
         // CONFIGURATIVE N8N INTEGRATION SETTINGS
         const N8N_WEBHOOK_URL = "https://n8n.silens.com.br/webhook/gestao-pneus";
+        // SSO universal (*.silens.com.br) — autenticação passou a ser centralizada aqui,
+        // não é mais validada contra a tabela local de usuários deste site.
+        const SSO_LOGIN_URL = "https://n8n.silens.com.br/webhook/login";
+        const SSO_ME_URL = "https://n8n.silens.com.br/webhook/me";
+        const SSO_LOGOUT_URL = "https://n8n.silens.com.br/webhook/logout";
 
         // MASTER IN-MEMORY STATE DATABASES
         let pneus = [];
@@ -3313,43 +3318,31 @@
         }
 
         // ====================================================
-        // PERSISTÊNCIA DE SESSÃO (sobrevive a F5 / fechar e reabrir a aba)
-        // Usa sessionStorage (não localStorage) de propósito: a sessão dura
-        // enquanto a aba estiver aberta, e não fica guardada indefinidamente
-        // no navegador depois que a pessoa fecha tudo -- mais seguro num
-        // computador compartilhado de pátio/oficina.
+        // SESSÃO VIA SSO (*.silens.com.br)
+        // Não guardamos mais nada em sessionStorage: quem mantém a sessão
+        // viva agora é o cookie httpOnly auth_token, gravado pelo SSO no
+        // domínio pai. A cada carregamento da página, perguntamos pro
+        // SSO se esse cookie ainda é válido — se a pessoa já logou em
+        // qualquer outro site *.silens.com.br nesta mesma sessão do
+        // navegador, ela entra aqui sem precisar logar de novo.
         // ====================================================
-        function salvarSessaoStorage() {
-            try {
-                sessionStorage.setItem('aconpneus_sessao', JSON.stringify({
-                    usuarioLogado, sessionToken, perfilLogado, usuarioIdLogado, permissoesLogado
-                }));
-            } catch (e) { /* sessionStorage indisponível -- segue sem persistir */ }
-        }
-
-        function limparSessaoStorage() {
-            try { sessionStorage.removeItem('aconpneus_sessao'); } catch (e) {}
-        }
-
-        function restaurarSessaoStorage() {
-            let salva = null;
-            try { salva = sessionStorage.getItem('aconpneus_sessao'); } catch (e) { return; }
-            if (!salva) return;
-
-            try {
-                const dados = JSON.parse(salva);
-                if (!dados || !dados.sessionToken || !dados.usuarioLogado) return;
-
-                usuarioLogado = dados.usuarioLogado;
-                sessionToken = dados.sessionToken;
-                perfilLogado = dados.perfilLogado || "";
-                usuarioIdLogado = dados.usuarioIdLogado || null;
-                permissoesLogado = dados.permissoesLogado || {};
-
-                entrarNoSistema(usuarioLogado, "Sessão restaurada");
-            } catch (e) {
-                limparSessaoStorage();
-            }
+        function checarSessaoSSO() {
+            fetch(SSO_ME_URL, { method: "GET", credentials: "include" })
+                .then(res => {
+                    if (res.status !== 200) throw new Error("sem sessao");
+                    return res.json();
+                })
+                .then(resposta => {
+                    const u = (resposta && resposta.user) || {};
+                    usuarioIdLogado = u.id || null;
+                    perfilLogado = perfilLogado || "operador"; // ver nota de permissões abaixo
+                    permissoesLogado = permissoesLogado || {};
+                    entrarNoSistema(u.nome || u.email || "Usuário", "SSO (.silens.com.br)");
+                })
+                .catch(() => {
+                    // Sem sessão válida: o loginOverlay já começa visível por padrão,
+                    // então não precisa fazer nada aqui além de deixar como está.
+                });
         }
 
         // Chamada quando o backend recusa uma ação por sessão expirada/inválida.
@@ -3362,53 +3355,46 @@
         }
         let selectedVisualizerWheel = "";
 
-        // AUTHENTICATION LOGIC (USER ROLES AND REDIRECTS WITH REAL N8N CONNECTIVITY - Ideia 3 - EXCLUSIVELY VIA SPREADSHEET)
+        // AUTENTICAÇÃO VIA SSO UNIVERSAL (*.silens.com.br)
+        // Login não é mais validado contra tabela local — vai direto pro
+        // webhook /login do n8n, que grava o cookie de sessão compartilhado
+        // com todos os outros sites da rede.
         function realizarAutenticacao(e) {
             e.preventDefault();
-            const user = document.getElementById("loginUser").value.trim();
-            const pass = document.getElementById("loginPassword").value;
+            const email = document.getElementById("loginUser").value.trim();
+            const senha = document.getElementById("loginPassword").value;
             const errorMsg = document.getElementById("loginErrorMsg");
             const loginCard = document.getElementById("loginCard");
 
             const resolver = animarBarraSincronizacao(3000);
-            mostrarToast("Validando Credenciais", "Conectando ao banco de dados mestre...", "warning");
+            mostrarToast("Validando Credenciais", "Conectando ao servidor de autenticação...", "warning");
 
-            const payload = {
-                action: "login",
-                data: { user: user, pass: pass },
-                timestamp: new Date().toISOString()
-            };
-
-            fetch(N8N_WEBHOOK_URL, {
+            fetch(SSO_LOGIN_URL, {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ email: email, senha: senha })
             })
                 .then(res => {
                     resolver();
-                    if (res.ok) {
-                        return res.json().then(serverRes => {
-                            if (serverRes && (serverRes.authenticated === true || serverRes.valid === true)) {
-                                const authenticatedUser = serverRes.user || user;
-                                sessionToken = serverRes.token || "";
-                                perfilLogado = serverRes.perfil || "operador";
-                                usuarioIdLogado = serverRes.usuarioId || null;
-                                permissoesLogado = serverRes.permissoes || {};
-                                entrarNoSistema(authenticatedUser, "Banco de Dados (Tabela USUARIOS)");
-                            } else {
-                                tratarLoginIncorreto(errorMsg, loginCard, user);
-                            }
-                        });
+                    return res.json().then(serverRes => ({ ok: res.ok, serverRes }));
+                })
+                .then(({ ok, serverRes }) => {
+                    if (ok && serverRes && serverRes.status === "success") {
+                        const u = serverRes.user || {};
+                        usuarioIdLogado = u.id || null;
+                        perfilLogado = perfilLogado || "operador"; // ver nota de permissões abaixo
+                        permissoesLogado = permissoesLogado || {};
+                        entrarNoSistema(u.nome || u.email || email, "SSO (.silens.com.br)");
                     } else {
-                        mostrarToast("Servidor Indisponível", "O validador n8n retornou erro de processamento.", "error");
-                        tratarLoginIncorreto(errorMsg, loginCard, user);
+                        tratarLoginIncorreto(errorMsg, loginCard, email);
                     }
                 })
                 .catch(err => {
                     resolver();
-                    console.error("n8n offline para login:", err);
+                    console.error("SSO offline para login:", err);
                     mostrarToast("Falha de Conexão", "Não foi possível validar suas credenciais. Tente novamente.", "error");
-                    tratarLoginIncorreto(errorMsg, loginCard, user);
+                    tratarLoginIncorreto(errorMsg, loginCard, email);
                 });
         }
 
@@ -3435,8 +3421,6 @@
         function entrarNoSistema(userName, dbSource) {
             usuarioLogado = userName;
             adicionarLog("LOGIN", "Usuário autenticado com sucesso", `Sessão iniciada como ${usuarioLogado} via ${dbSource}`);
-
-            salvarSessaoStorage();
 
             // Set operational badges
             document.getElementById("desktopUserAvatar").innerText = usuarioLogado.substring(0, 1).toUpperCase();
@@ -3473,12 +3457,18 @@
         }
 
         function realizarLogout() {
+            // Avisa o SSO pra invalidar o cookie em TODOS os sites da rede,
+            // não só neste. Não bloqueia o logout local se a chamada falhar
+            // (ex: sem internet) — a limpeza manual do cookie logo abaixo
+            // cobre esse caso.
+            fetch(SSO_LOGOUT_URL, { method: "POST", credentials: "include" }).catch(() => {});
+            document.cookie = "auth_token=; Domain=.silens.com.br; Path=/; Max-Age=0; Secure; SameSite=Lax";
+
             usuarioLogado = "";
             sessionToken = "";
             perfilLogado = "";
             usuarioIdLogado = null;
             permissoesLogado = {};
-            limparSessaoStorage();
             const menuAdmin = document.getElementById("menuAdminGroup");
             if (menuAdmin) menuAdmin.classList.add("hidden");
             document.getElementById("loginUser").value = "";
@@ -3526,6 +3516,7 @@
 
             return fetch(N8N_WEBHOOK_URL, {
                 method: "POST",
+                credentials: "include", // necessário pro Nginx (auth_request) e o n8n reconhecerem a sessão SSO
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             })
@@ -6610,6 +6601,7 @@
 
             fetch(N8N_WEBHOOK_URL, {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             })
@@ -7624,7 +7616,7 @@
             renderizarLogs();
             inicializarTema();
             inicializarAtalhoBuscaGlobal();
-            restaurarSessaoStorage();
+            checarSessaoSSO();
         });
 
         // ====================================================
@@ -7759,6 +7751,7 @@
             // Post request to trigger sync rules on n8n
             fetch(N8N_WEBHOOK_URL, {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     action: "sync",
