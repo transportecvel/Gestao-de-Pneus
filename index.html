@@ -4399,13 +4399,23 @@
         // RETORNA A QUANTIDADE DE EIXOS TRASEIROS DO VEÍCULO (1 a 4)
         function getEixosTraseirosVeiculo(caminhao) {
             if (!caminhao) return 1;
-            if (caminhao.eixos_traseiros !== undefined && caminhao.eixos_traseiros !== null && !isNaN(parseInt(caminhao.eixos_traseiros))) {
-                return Math.max(1, Math.min(4, parseInt(caminhao.eixos_traseiros)));
-            }
+
+            // Piso mínimo de eixos traseiros de acordo com o TIPO do veículo.
+            // Isso garante que um TRUCK nunca seja desenhado com menos de 2 eixos
+            // traseiros, mesmo que o campo eixos_traseiros venha zerado/nulo/errado do banco.
             const tipo = (caminhao.tipo || caminhao.modelo || "").toUpperCase();
-            if (tipo === "TRUCK") return 2;
-            if (tipo === "CARROCERIA") return 3;
-            return 1; // TOCO e 3/4
+            let minimoPorTipo = 1; // TOCO e 3/4
+            if (tipo === "TRUCK") minimoPorTipo = 2;
+            if (tipo === "CARROCERIA") minimoPorTipo = 3;
+
+            if (caminhao.eixos_traseiros !== undefined && caminhao.eixos_traseiros !== null && !isNaN(parseInt(caminhao.eixos_traseiros))) {
+                const valorBanco = parseInt(caminhao.eixos_traseiros);
+                // Respeita um valor do banco MAIOR que o mínimo do tipo (ex: TRUCK com 3 eixos),
+                // mas nunca deixa cair abaixo do mínimo esperado para o tipo cadastrado.
+                return Math.max(minimoPorTipo, Math.min(4, valorBanco));
+            }
+
+            return minimoPorTipo;
         }
 
         // RENDERIZAÇÃO DO GRID DE CARDS DE CONTROLE DE FROTA
