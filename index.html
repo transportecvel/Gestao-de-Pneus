@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
@@ -723,15 +723,22 @@
                 </a>
 
                 <div class="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-[#7a7365]">Análise & Histórico</div>
+                <a href="javascript:void(0)" id="btn-tab-quilometragem" onclick="changeTab('quilometragem')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
+                    <span class="flex items-center gap-2.5"><i class="fa-solid fa-gauge-high w-4 text-center"></i> Histórico de KM</span>
+                    <span id="badge-total-historico-km" class="badge-editorial px-2 py-0.5 rounded-full t-num">0</span>
+                </a>
                 <a href="javascript:void(0)" id="btn-tab-historico" onclick="changeTab('historico')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
                     <span class="flex items-center gap-2.5"><i class="fa-solid fa-timeline w-4 text-center"></i> Histórico & Vida</span>
                 </a>
-                <a href="javascript:void(0)" id="btn-tab-logs" onclick="changeTab('logs')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
-                    <span class="flex items-center gap-2.5"><i class="fa-solid fa-shield-halved w-4 text-center"></i> Logs de Auditoria</span>
+                <a href="javascript:void(0)" id="btn-tab-alertas" onclick="changeTab('alertas')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
+                    <span class="flex items-center gap-2.5"><i class="fa-solid fa-bell w-4 text-center"></i> Alertas & Relatórios</span>
                 </a>
 
                 <div id="menuAdminGroup" class="hidden">
                     <div class="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-[#7a7365]">Administração</div>
+                    <a href="javascript:void(0)" id="btn-tab-logs" onclick="changeTab('logs')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
+                        <span class="flex items-center gap-2.5"><i class="fa-solid fa-shield-halved w-4 text-center"></i> Logs de Auditoria</span>
+                    </a>
                     <a href="javascript:void(0)" id="btn-tab-usuarios" onclick="changeTab('usuarios')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
                         <span class="flex items-center gap-2.5"><i class="fa-solid fa-users-gear w-4 text-center"></i> Usuários & Permissões</span>
                     </a>
@@ -1407,6 +1414,30 @@
                     </div>
 
                     <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
+                        <div class="flex items-center gap-2 mb-3 border-b border-[#e2ddd2] pb-4">
+                            <i class="fa-solid fa-triangle-exclamation text-red-600"></i>
+                            <h3 class="text-sm font-semibold text-[#22201b]">Alertas de Desgaste Crítico</h3>
+                            <span class="text-[10px] text-[#7a7365]">— pneus rodando com sulco ≤ 4.0mm (recape) ou ≤ 1.6mm (TWI)</span>
+                        </div>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-xs">
+                                <thead class="text-[10px] uppercase tracking-wide text-[#7a7365] border-b border-[#e2ddd2]">
+                                    <tr>
+                                        <th class="py-2.5 px-3 text-left">Fogo</th>
+                                        <th class="py-2.5 px-3 text-left">Veículo / Posição</th>
+                                        <th class="py-2.5 px-3 text-left">Marca / Medida</th>
+                                        <th class="py-2.5 px-3 text-left">Sulco Atual</th>
+                                        <th class="py-2.5 px-3 text-left">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="painelAlertasCorpo" class="divide-y divide-[#e2ddd2]">
+                                    <!-- Renderizado via JS (atualizarDashboard) -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-4 mb-4">
                             <div>
                                 <h3 class="text-sm font-semibold text-[#22201b]">Auditoria de Sulcos & Vistoria Rápida</h3>
@@ -1581,13 +1612,233 @@
                     </div>
                 </section>
 
+                <!-- ABA: HISTÓRICO DE QUILOMETRAGEM DA FROTA -->
+                <section id="tab-quilometragem" class="tab-pane space-y-6">
+                    <!-- Cards de Métricas e Resumo -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-2xl border border-[#e2ddd2] p-4 shadow-sm flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-[#ede8dc] text-[#2b4068] flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-file-invoice"></i>
+                            </div>
+                            <div>
+                                <div class="text-[11px] uppercase tracking-wider font-semibold text-[#7a7365]">Total de Leituras</div>
+                                <div id="kmiTotalRegistros" class="text-xl font-bold text-[#22201b] t-num">0</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-[#e2ddd2] p-4 shadow-sm flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-truck-moving"></i>
+                            </div>
+                            <div>
+                                <div class="text-[11px] uppercase tracking-wider font-semibold text-[#7a7365]">Frotas Atualizadas</div>
+                                <div id="kmiFrotasUnicas" class="text-xl font-bold text-[#22201b] t-num">0</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-[#e2ddd2] p-4 shadow-sm flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <div class="text-[11px] uppercase tracking-wider font-semibold text-[#7a7365]">Última Emissão</div>
+                                <div id="kmiUltimaEmissao" class="text-sm font-bold text-[#22201b]">-</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl border border-[#e2ddd2] p-4 shadow-sm flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-gauge"></i>
+                            </div>
+                            <div>
+                                <div class="text-[11px] uppercase tracking-wider font-semibold text-[#7a7365]">Quilometragem Média</div>
+                                <div id="kmiKmMedio" class="text-xl font-bold text-[#22201b] t-num">0 km</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bloco de Importação / Dropzone de Arquivo CSV/TXT -->
+                    <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm space-y-4">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-3">
+                            <div>
+                                <h3 class="text-sm font-semibold text-[#22201b] flex items-center gap-2">
+                                    <i class="fa-solid fa-cloud-arrow-up text-[#2b4068]"></i> Importar Conferência de Frota (.CSV / .TXT)
+                                </h3>
+                                <p class="text-xs text-[#7a7365]">Envie o arquivo bruto de conferência (ex: 43950.csv). O sistema extrai automaticamente a Data de Emissão, a Frota e a Quilometragem de cada veículo.</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="carregarArquivo43950Exemplo()" class="btn-editorial-secondary px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2">
+                                    <i class="fa-solid fa-file-code text-[#2b4068]"></i> Carregar 43950.csv de Exemplo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Dropzone Area -->
+                        <div id="dropzoneKmArea" onclick="document.getElementById('inputKmCsvFile').click()" ondragover="handleDragOverKm(event)" ondragleave="handleDragLeaveKm(event)" ondrop="handleDropKm(event)" class="border-2 border-dashed border-[#e2ddd2] hover:border-[#2b4068] bg-[#f9f8f5] rounded-2xl p-6 text-center cursor-pointer transition-colors flex flex-col items-center justify-center gap-2">
+                            <div class="w-12 h-12 rounded-full bg-[#ede8dc] text-[#2b4068] flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-file-import"></i>
+                            </div>
+                            <div class="text-xs font-bold text-[#22201b]">Clique aqui ou arraste seu arquivo .CSV / .TXT</div>
+                            <div class="text-[11px] text-[#7a7365]">Suporta arquivos de conferência com Emissão, Frota, Descrição, Placa, Peso e KM Atual</div>
+                            <input type="file" id="inputKmCsvFile" accept=".csv,.txt" onchange="processarUploadKmFile(event)" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- Tabela Principal de Histórico de Quilometragem -->
+                    <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm flex flex-col">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-3 mb-3">
+                            <div>
+                                <h3 class="text-sm font-semibold text-[#22201b]">Histórico de Odômetro da Frota</h3>
+                                <p class="text-xs text-[#7a7365]">Registros gravados de leituras de quilometragem da frota física</p>
+                            </div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <div class="relative">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#7a7365]"></i>
+                                    <input type="text" id="buscaKmFiltro" oninput="filtrarTabelaKm()" placeholder="Buscar por frota ou placa..." class="bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl pl-8 pr-3 py-1.5 text-xs text-[#22201b] focus:ring-2 focus:ring-[#2b4068]">
+                                </div>
+                                <select id="filtroDataKm" onchange="filtrarTabelaKm()" class="bg-[#f9f8f5] border border-[#e2ddd2] rounded-xl px-2.5 py-1.5 text-xs text-[#22201b] font-medium">
+                                    <option value="TODOS">Todas as Datas</option>
+                                </select>
+                                <button onclick="exportarKmExcel()" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5" title="Exportar Excel">
+                                    <i class="fa-solid fa-file-excel text-emerald-600"></i> Excel
+                                </button>
+                                <button onclick="exportarKmPDF()" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5" title="Exportar PDF">
+                                    <i class="fa-solid fa-file-pdf text-red-600"></i> PDF
+                                </button>
+                                <button onclick="limparHistoricoKm()" class="bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-xl text-xs font-medium hover:bg-red-100 transition-colors" title="Limpar Registros">
+                                    <i class="fa-solid fa-trash-can"></i> Limpar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-[#f9f8f5] text-[#5c5549] uppercase font-bold text-[10px] tracking-wider border-b border-[#e2ddd2]">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Data Emissão</th>
+                                        <th class="py-2.5 px-3">Frota</th>
+                                        <th class="py-2.5 px-3">Placa</th>
+                                        <th class="py-2.5 px-3 text-right">KM Atual</th>
+                                        <th class="py-2.5 px-3 text-center">Evolução</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaKmCorpo" class="divide-y divide-[#e2ddd2]">
+                                    <!-- Renderizado via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="paginacaoKm" class="flex items-center justify-between px-1 pt-3 text-xs text-[#7a7365]"></div>
+                    </div>
+
+                    <!-- ANÁLISE DE DESGASTE POR QUILOMETRAGEM -->
+                    <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-4 mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-[#22201b]">Análise de Desgaste por Quilometragem</h3>
+                                <p class="text-xs text-[#7a7365]">Quanto cada pneu instalado já rodou desde a montagem e o desgaste estimado por 1.000 km</p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-xs">
+                                <thead class="text-[10px] uppercase tracking-wide text-[#7a7365] border-b border-[#e2ddd2]">
+                                    <tr>
+                                        <th class="py-2.5 px-3">Fogo</th>
+                                        <th class="py-2.5 px-3">Frota</th>
+                                        <th class="py-2.5 px-3">Posição</th>
+                                        <th class="py-2.5 px-3 text-right">KM Instalação</th>
+                                        <th class="py-2.5 px-3 text-right">KM Atual (Frota)</th>
+                                        <th class="py-2.5 px-3 text-right">KM Rodado pelo Pneu</th>
+                                        <th class="py-2.5 px-3 text-right">Desgaste (mm)</th>
+                                        <th class="py-2.5 px-3 text-right">Desgaste / 1.000 km</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaAnaliseDesgasteKm" class="divide-y divide-[#e2ddd2]">
+                                    <!-- Renderizado via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB: ALERTAS & RELATÓRIOS -->
+                <section id="tab-alertas" class="tab-pane space-y-6">
+
+                    <!-- CPK -->
+                    <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-4 mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-[#22201b]">CPK — Custo por Quilômetro</h3>
+                                <p class="text-xs text-[#7a7365]">Custo total (compra + recapes + consertos) dividido pelo km rodado em ciclos já encerrados</p>
+                            </div>
+                            <button onclick="gerarPdfRelatorio('cpk')" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium">
+                                <i class="fa-solid fa-file-pdf text-red-600"></i> PDF (paisagem)
+                            </button>
+                        </div>
+                        <h4 class="text-xs font-bold text-[#22201b] uppercase tracking-wide mb-2">Por Frota</h4>
+                        <div class="overflow-x-auto custom-scrollbar mb-5">
+                            <table class="w-full text-xs">
+                                <thead class="text-[10px] uppercase tracking-wide text-[#7a7365] border-b border-[#e2ddd2]">
+                                    <tr><th class="py-2 px-3 text-left">Frota</th><th class="py-2 px-3 text-left">Placa</th><th class="py-2 px-3 text-left">Tipo</th><th class="py-2 px-3 text-right">Nº Pneus</th><th class="py-2 px-3 text-right">Custo Total</th><th class="py-2 px-3 text-right">KM Rodado</th><th class="py-2 px-3 text-right">CPK</th></tr>
+                                </thead>
+                                <tbody id="tabelaCpkFrota" class="divide-y divide-[#e2ddd2]"></tbody>
+                            </table>
+                        </div>
+                        <h4 class="text-xs font-bold text-[#22201b] uppercase tracking-wide mb-2">Por Pneu</h4>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-xs">
+                                <thead class="text-[10px] uppercase tracking-wide text-[#7a7365] border-b border-[#e2ddd2]">
+                                    <tr><th class="py-2 px-3 text-left">Fogo</th><th class="py-2 px-3 text-left">Marca/Medida</th><th class="py-2 px-3 text-left">Status</th><th class="py-2 px-3 text-right">Custo Total</th><th class="py-2 px-3 text-right">KM Rodado</th><th class="py-2 px-3 text-right">CPK</th></tr>
+                                </thead>
+                                <tbody id="tabelaCpkPneu" class="divide-y divide-[#e2ddd2]"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- MOVIMENTAÇÃO DE PNEUS -->
+                    <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-4 mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-[#22201b]">Movimentação de Pneus (últimos 30 dias)</h3>
+                                <p class="text-xs text-[#7a7365]">Comprados, instalados, retirados, recapados e descartados</p>
+                            </div>
+                            <button onclick="gerarPdfRelatorio('movimentacao')" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium">
+                                <i class="fa-solid fa-file-pdf text-red-600"></i> PDF (paisagem)
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3" id="cardsMovimentacaoPneus"></div>
+                    </div>
+
+                    <!-- ALERTAS CONFIGURADOS -->
+                    <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-4 mb-4">
+                            <div>
+                                <h3 class="text-sm font-semibold text-[#22201b]">Alertas Configurados</h3>
+                                <p class="text-xs text-[#7a7365]">Metas de KM, avisos de retirada e relatórios periódicos por e-mail</p>
+                            </div>
+                            <button onclick="abrirModalNovoAlerta()" class="btn-editorial-primary px-3 py-1.5 rounded-xl text-xs font-semibold">
+                                <i class="fa-solid fa-plus"></i> Criar Novo Alerta
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-xs">
+                                <thead class="text-[10px] uppercase tracking-wide text-[#7a7365] border-b border-[#e2ddd2]">
+                                    <tr><th class="py-2 px-3 text-left">Nome</th><th class="py-2 px-3 text-left">Tipo</th><th class="py-2 px-3 text-left">Filtro</th><th class="py-2 px-3 text-left">Meta/Período</th><th class="py-2 px-3 text-left">E-mail</th><th class="py-2 px-3 text-center">Status</th><th class="py-2 px-3 text-center">Ações</th></tr>
+                                </thead>
+                                <tbody id="tabelaAlertasCorpo" class="divide-y divide-[#e2ddd2]">
+                                    <tr><td colspan="7" class="text-center py-6 text-[#7a7365]">Nenhum alerta configurado ainda.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- 8. TAB LOGS DO SISTEMA -->
                 <section id="tab-logs" class="tab-pane space-y-6">
                     <div class="bg-white rounded-2xl border border-[#e2ddd2] p-5 shadow-sm">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e2ddd2] pb-4 mb-4">
                             <div>
                                 <h3 class="text-sm font-semibold text-[#22201b]">Trilha de Auditoria & Logs de Operação</h3>
-                                <p class="text-xs text-[#7a7365]">Registro seguro de requisições, logins, trocas de pneus e sincronizações</p>
+                                <p class="text-xs text-[#7a7365]">Registro de requisições, logins, trocas de pneus e sincronizações — direto do banco de dados, últimos 15 dias. Visível apenas para administradores.</p>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button onclick="limparLogsVisualizacao()" class="btn-editorial-secondary px-3 py-1.5 rounded-xl text-xs font-medium">
@@ -2020,13 +2271,15 @@
     <!-- Elementos Ocultos / Auxiliares para Compatibilidade Completa do Script -->
     <div style="display:none;">
         <input type="checkbox" id="themeCheckbox" onchange="toggleTheme()">
-        <input type="checkbox" id="btnCheckAuditoria" onchange="toggleSwitchAuditoria()">
+        <!-- btnCheckAuditoria e formDescarteOpcional NAO ficam aqui: os elementos de verdade sao
+             injetados dinamicamente dentro do modal de vistoria (ver linhas ~4308 e ~4375). Ter um
+             stub com o mesmo id aqui fazia getElementById() sempre pegar este (escondido, morto)
+             em vez do real, quebrando o botao de confirmar FOGO e o sub-formulario de descarte. -->
         <span id="diagnosticoEixoAlerta"></span>
         <span id="valCpkDianteira"></span>
         <span id="valCpkTraseira"></span>
         <span id="valTaxaDianteira"></span>
         <span id="valTaxaTraseira"></span>
-        <div id="formDescarteOpcional"></div>
         <div id="simResultadosCard"></div>
         <input type="number" id="simKmEsperada" value="60000">
         <input type="number" id="simCustoRecapeA" value="380">
@@ -2053,1241 +2306,9 @@
 
         // MASTER IN-MEMORY STATE DATABASES
         let pneus = [];
-        // Frota carregada 100% via sincronizacao com o backend (n8n/Planilha); nenhum dado de veiculo fica hardcoded no HTML/JS entregue ao navegador.
-        let caminhoes = [
-        {
-                "frota": "91",
-                "placa": "AHI-9554",
-                "modelo": "VW/16 170 BT",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "76.062.488/0009-09"
-        },
-        {
-                "frota": "301",
-                "placa": "ANM-9690",
-                "modelo": "VW 15.180 E",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "76.062.488/0007-39"
-        },
-        {
-                "frota": "2262",
-                "placa": "ATP-3238",
-                "modelo": "VW 8150 E DELIVERY PLUS",
-                "tipo": "3/4",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "76.096.718/0001-95"
-        },
-        {
-                "frota": "2260",
-                "placa": "AOX-0J62",
-                "modelo": "VW 8.150",
-                "tipo": "3/4",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2261",
-                "placa": "ATP-3C57",
-                "modelo": "VW 8.150",
-                "tipo": "3/4",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2263",
-                "placa": "ATP-3D25",
-                "modelo": "VW 8.150",
-                "tipo": "3/4",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2285",
-                "placa": "ANK-0831",
-                "modelo": "VW 8150 E DELIVERY PLUS",
-                "tipo": "3/4",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "76.096.718/0001-95"
-        },
-        {
-                "frota": "2468",
-                "placa": "ATQ-3I18",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2469",
-                "placa": "ATQ-3I23",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2470",
-                "placa": "ATO-6H73",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2471",
-                "placa": "ATO-6H75",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2472",
-                "placa": "ATQ-3I26",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2473",
-                "placa": "ATO-6I04",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2474",
-                "placa": "ATQ-3F42",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2475",
-                "placa": "ATQ-2D21",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2476",
-                "placa": "ATO-6I02",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2477",
-                "placa": "ATO-6H81",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2478",
-                "placa": "ATQ-3F16",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2479",
-                "placa": "ATQ-3F44",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2480",
-                "placa": "ATQ-2C79",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2481",
-                "placa": "ATQ-2C91",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2482",
-                "placa": "ATO-6H56",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2483",
-                "placa": "ATO-6I07",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2484",
-                "placa": "ATO-6I26",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2485",
-                "placa": "ATQ-3F45",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2486",
-                "placa": "ATQ-6C67",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2487",
-                "placa": "ATQ-2D42",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2488",
-                "placa": "ATQ-2C86",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2489",
-                "placa": "ATQ-2D41",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2490",
-                "placa": "ATQ-2D12",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2491",
-                "placa": "ATO-6I32",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2493",
-                "placa": "ATO-6I28",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2494",
-                "placa": "ATQ-2J86",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2495",
-                "placa": "ATO-6H60",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2496",
-                "placa": "ATQ-3F19",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2497",
-                "placa": "ATQ-3F26",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2498",
-                "placa": "ATQ-2D16",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2499",
-                "placa": "ATQ-2C94",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2500",
-                "placa": "ATO-6I12",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2501",
-                "placa": "ATO-6I25",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2502",
-                "placa": "ATO-6I18",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2503",
-                "placa": "ATQ-3F15",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2504",
-                "placa": "ATQ-2C64",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2505",
-                "placa": "ATQ-2C82",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2506",
-                "placa": "ATO-6I16",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2507",
-                "placa": "ATQ-2D18",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2508",
-                "placa": "ATO-6H95",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2509",
-                "placa": "ATQ-3F37",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2510",
-                "placa": "ATQ-3F22",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2511",
-                "placa": "ATQ-3F28",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2512",
-                "placa": "ATQ-3H90",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2514",
-                "placa": "ATQ-2C75",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2515",
-                "placa": "ATQ-2C76",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2516",
-                "placa": "ATQ-4A77",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2517",
-                "placa": "ATO-6H92",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2518",
-                "placa": "ATO-6I14",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2519",
-                "placa": "ATQ-3H94",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2520",
-                "placa": "ATQ-3F12",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2522",
-                "placa": "ATQ-2D03",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2523",
-                "placa": "ATO-6H97",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2524",
-                "placa": "ATQ-3F21",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2525",
-                "placa": "ATQ-3F30",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2526",
-                "placa": "ATQ-3F47",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2527",
-                "placa": "ATQ-3I16",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2528",
-                "placa": "ATQ-3I17",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2529",
-                "placa": "ATQ-3F17",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2530",
-                "placa": "ATQ-6C71",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2531",
-                "placa": "EOF-4E56",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2532",
-                "placa": "EOF-4E14",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2533",
-                "placa": "ATP-3D21",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2534",
-                "placa": "ATP-3D27",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2535",
-                "placa": "ATP-3C17",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2536",
-                "placa": "EOF-4F53",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2537",
-                "placa": "EOF-4E10",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2538",
-                "placa": "EOF-4G39",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2539",
-                "placa": "EOF-4G54",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2540",
-                "placa": "ATP-3D40",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2541",
-                "placa": "SDS-4J04",
-                "modelo": "VW 17.280 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2542",
-                "placa": "SDS-4J05",
-                "modelo": "VW 17.280 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2543",
-                "placa": "SDS-4J06",
-                "modelo": "VW 17.280 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2544",
-                "placa": "SDS-4J08",
-                "modelo": "VW 17.280 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2545",
-                "placa": "SDT-2G97",
-                "modelo": "VW 17.280 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2546",
-                "placa": "TAX-5I34",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2547",
-                "placa": "TBE-7A89",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2548",
-                "placa": "TBE-7B12",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2549",
-                "placa": "TBE-7A86",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2550",
-                "placa": "TBE-7B07",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2551",
-                "placa": "TBE-7A81",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2552",
-                "placa": "TBS-3F93",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2553",
-                "placa": "TBS-3F94",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2554",
-                "placa": "UBL-8E46",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2555",
-                "placa": "UBL-8E47",
-                "modelo": "VW 18.260 CRM",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2601",
-                "placa": "ATP-3I06",
-                "modelo": "VW 24.250 CLC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2602",
-                "placa": "ATP-3C28",
-                "modelo": "VW 24.250 CLC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2603",
-                "placa": "ATP-3D51",
-                "modelo": "VW 24.250 CLC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2604",
-                "placa": "ATP-3C41",
-                "modelo": "VW 24.250 CLC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2605",
-                "placa": "ATP-3C25",
-                "modelo": "VW 24.250 CLC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2606",
-                "placa": "ATP-3D28",
-                "modelo": "VW 17.250 CLC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2607",
-                "placa": "ATP-3C44",
-                "modelo": "VW 17.250 CLC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2608",
-                "placa": "ATP-3C46",
-                "modelo": "VW 17.250 CLC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2609",
-                "placa": "ATP-3C19",
-                "modelo": "VW 17.250 CLC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2610",
-                "placa": "BCE-5E93",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2611",
-                "placa": "BCE-5E87",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2612",
-                "placa": "BCC-1B37",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2613",
-                "placa": "BCC-1C95",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2614",
-                "placa": "BCC-1A94",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2615",
-                "placa": "BCC-1A71",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2616",
-                "placa": "BCC-1A62",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2617",
-                "placa": "BCC-1B24",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2618",
-                "placa": "BCC-1B38",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2619",
-                "placa": "BCC-1C72",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2620",
-                "placa": "BCC-1A76",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2621",
-                "placa": "BCC-1C86",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2623",
-                "placa": "RHZ-0F49",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2624",
-                "placa": "RHZ-4D02",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2625",
-                "placa": "RHZ-4D01",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2626",
-                "placa": "RHZ-4C99",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "8001",
-                "placa": "EOF-4C75",
-                "modelo": "SR FACCHINI SRF CF",
-                "tipo": "CARROCERIA",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "3305",
-                "placa": "ATP-3J49",
-                "modelo": "VW 8150 E DELIVERY PLUS",
-                "tipo": "3/4",
-                "filial": "JD HOME CENTER",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "3201",
-                "placa": "ATP-3C01",
-                "modelo": "VW 8150 E DELIVERY PLUS",
-                "tipo": "3/4",
-                "filial": "JD HOME CENTER",
-                "cnpj": "35.829.681/0001-77"
-        },
-        {
-                "frota": "3422",
-                "placa": "EOF-4412",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "JD HOME CENTER",
-                "cnpj": "76.096.718/0004-38"
-        },
-        {
-                "frota": "3420",
-                "placa": "ATP-3C04",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "JD HOME CENTER",
-                "cnpj": "76.096.718/0001-95"
-        },
-        {
-                "frota": "3418",
-                "placa": "ATP-3C10",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "JD HOME CENTER",
-                "cnpj": "35.829.681/0001-76"
-        },
-        {
-                "frota": "3601",
-                "placa": "ATP-3E23",
-                "modelo": "VW 24.250 CNC 6X2",
-                "tipo": "TRUCK",
-                "filial": "JD HOME CENTER",
-                "cnpj": "35.829.681/0001-78"
-        },
-        {
-                "frota": "3602",
-                "placa": "SDY-7C65",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "JD HOME CENTER",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "3410",
-                "placa": "ATP-3C02",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "JD KONSTRUIR",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "3423",
-                "placa": "EOF-4E13",
-                "modelo": "VW 17.250 CNC",
-                "tipo": "TOCO",
-                "filial": "JD KONSTRUIR",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2258",
-                "placa": "ANK-0I37",
-                "modelo": "VW 8.150",
-                "tipo": "3/4",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35829681/0001-80"
-        },
-        {
-                "frota": "2255",
-                "placa": "ANK-0I30",
-                "modelo": "VW 8.150",
-                "tipo": "3/4",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35829681/0001-80"
-        },
-        {
-                "frota": "2058",
-                "placa": "DPE-0H63",
-                "modelo": "VW 8.150",
-                "tipo": "3/4",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "76.062.488/0005-77"
-        },
-        {
-                "frota": "2257",
-                "placa": "ANK-0I32",
-                "modelo": "VW 8.150",
-                "tipo": "3/4",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35829681/0001-80"
-        },
-        {
-                "frota": "4356",
-                "placa": "EOF-4E38",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4362",
-                "placa": "EOF-4E52",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4366",
-                "placa": "EOF-4E60",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4371",
-                "placa": "EOF-4F51",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4372",
-                "placa": "EOF-4F52",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4377",
-                "placa": "EOF-4F67",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4380",
-                "placa": "EOF-4F74",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4388",
-                "placa": "EOF-4F83",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4038",
-                "placa": "EOF-4G63",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4001",
-                "placa": "EOF-4F73",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4006",
-                "placa": "EOF-4E16",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4017",
-                "placa": "EOF-4F64",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4023",
-                "placa": "EOF-4G56",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4035",
-                "placa": "EOF-4G60",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4036",
-                "placa": "EOF-4G62",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4053",
-                "placa": "EOF-4E59",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "4062",
-                "placa": "EOF-4F84",
-                "modelo": "VW 17.250 CLC",
-                "tipo": "TOCO",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "6073",
-                "placa": "EOF-4D76",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "2622",
-                "placa": "RHZ-0F48",
-                "modelo": "VW 24.280 CRM 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO CASCAVEL",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "1002",
-                "placa": "ATP-3C50",
-                "modelo": "VW 8150 E DELIVERY PLUS",
-                "tipo": "3/4",
-                "filial": "DESTRO FOZ",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "1003",
-                "placa": "AOK-6J43",
-                "modelo": "VW 8150 E DELIVERY PLUS",
-                "tipo": "3/4",
-                "filial": "DESTRO FOZ",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "1004",
-                "placa": "AON-8D74",
-                "modelo": "VW 8150 E DELIVERY PLUS",
-                "tipo": "3/4",
-                "filial": "DESTRO FOZ",
-                "cnpj": "35.829.681/0001-80"
-        },
-        {
-                "frota": "1005",
-                "placa": "ATP-3C14",
-                "modelo": "VW 24.250 CNC 6X2",
-                "tipo": "TRUCK",
-                "filial": "DESTRO FOZ",
-                "cnpj": "35.829.681/0001-80"
-        }
-];
+        let historicoKm = [];
+        // Frota carregada 100% via sincronizacao com o backend (n8n/PostgreSQL); nenhum dado de veiculo fica hardcoded no HTML/JS entregue ao navegador.
+        let caminhoes = [];
 
         // Sanitiza texto antes de inserir via innerHTML, prevenindo XSS armazenado/refletido
         function escapeHtml(valor) {
@@ -3301,6 +2322,7 @@
         }
         let vistorias = [];
         let movimentacoes = [];
+        let alertasConfigurados = []; // hidratado via listar_alertas, nao via sync (tabela separada, carregada so quando a aba Alertas abre)
 
         let usuarioLogado = "";
         let sessionToken = ""; // token de sessão retornado pelo login, exigido pelo backend em toda ação protegida
@@ -3580,6 +2602,8 @@
             'tab-controle-frota': { title: 'Controle de Frota', subtitle: 'Mapeamento visual de eixos, inspeção e telemetria' },
             'frota': { title: 'Frotas Cadastradas', subtitle: 'Cadastro mestre e gerenciamento de veículos da frota' },
             'tab-frota': { title: 'Frotas Cadastradas', subtitle: 'Cadastro mestre e gerenciamento de veículos da frota' },
+            'quilometragem': { title: 'Histórico de Quilometragem', subtitle: 'Importação de conferência de frota, telemetria de KM e evolução da frota' },
+            'tab-quilometragem': { title: 'Histórico de Quilometragem', subtitle: 'Importação de conferência de frota, telemetria de KM e evolução da frota' },
             'estoque': { title: 'Estoque & Galpão', subtitle: 'Inventário de pneus novos, recapados e disponíveis para montagem' },
             'tab-estoque': { title: 'Estoque & Galpão', subtitle: 'Inventário de pneus novos, recapados e disponíveis para montagem' },
             'cadastro': { title: 'Entrada & Cadastro', subtitle: 'Lançamento individual ou em lote via XML da NF-e' },
@@ -3635,6 +2659,9 @@
             }
             if (rawId === 'frota' && typeof carregarTabelaFrotas === 'function') {
                 carregarTabelaFrotas();
+            }
+            if (rawId === 'quilometragem' && typeof carregarTabelaHistoricoKm === 'function') {
+                carregarTabelaHistoricoKm();
             }
             if (rawId === 'estoque' && typeof carregarTabelaEstoque === 'function') {
                 carregarTabelaEstoque();
@@ -4028,6 +3055,7 @@
 
         function carregarTabelasEPanels() {
             atualizarCamposFiliais();
+            if (typeof carregarTabelaHistoricoKm === 'function') carregarTabelaHistoricoKm();
 
             // Remove o efeito skeleton assim que os dados reais chegam
             document.querySelectorAll('#kpiEstoque, #kpiRodando, #kpiRecape, #kpiDescarte, #kpiInvestido, #kpiCpkGlobal')
@@ -5291,6 +4319,13 @@
                     return;
                 }
 
+                // Sugere o KM de entrada a partir da ultima leitura importada (conferencia de frota) pra essa frota.
+                const ultimaLeituraInst = obterUltimoKmFrota(frota);
+                const kmSugeridoInst = ultimaLeituraInst ? ultimaLeituraInst.km : 0;
+                const dicaKmInst = ultimaLeituraInst
+                    ? `Última leitura da conferência de frota: ${ultimaLeituraInst.km.toLocaleString('pt-BR')} km (${ultimaLeituraInst.data})`
+                    : `Nenhuma leitura de KM importada pra essa frota ainda — confirme o valor manualmente.`;
+
                 body.innerHTML = `
                     <form onsubmit="salvarInstalacaoRapida(event, '${frota}', '${selectedVisualizerWheel}')">
                         <div style="display:flex; flex-direction:column; gap:16px;">
@@ -5307,7 +4342,8 @@
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label for="instKm">Quilometragem (KM) de Entrada *</label>
-                                    <input type="number" class="form-control" id="instKm" value="150000" required>
+                                    <input type="number" class="form-control" id="instKm" value="${kmSugeridoInst}" required>
+                                    <small style="color:var(--text-muted); font-size:10.5px;">${dicaKmInst}</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="instData">Data do Evento *</label>
@@ -5377,6 +4413,13 @@
                 const p = pneus.find(pn => pn.caminhao_atual === frota && pn.posicao_atual === selectedVisualizerWheel);
                 titulo.innerText = "Desinstalação de Pneu";
 
+                // Sugere o KM final a partir da ultima leitura importada (conferencia de frota) pra essa frota.
+                const ultimaLeituraRet = obterUltimoKmFrota(frota);
+                const kmSugeridoRet = ultimaLeituraRet ? ultimaLeituraRet.km : 0;
+                const dicaKmRet = ultimaLeituraRet
+                    ? `Última leitura da conferência de frota: ${ultimaLeituraRet.km.toLocaleString('pt-BR')} km (${ultimaLeituraRet.data})`
+                    : `Nenhuma leitura de KM importada pra essa frota ainda — confirme o valor manualmente.`;
+
                 body.innerHTML = `
                     <form onsubmit="salvarRetiradaModal(event, '${p.fogo}')">
                         <div style="display:flex; flex-direction:column; gap:16px;">
@@ -5394,7 +4437,8 @@
                             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                                 <div class="form-group">
                                     <label for="retKm">KM Final de Desinstalação *</label>
-                                    <input type="number" class="form-control" id="retKm" value="155000" required>
+                                    <input type="number" class="form-control" id="retKm" value="${kmSugeridoRet}" required>
+                                    <small style="color:var(--text-muted); font-size:10.5px;">${dicaKmRet}</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="retDestino">Destino do Ativo *</label>
@@ -5655,7 +4699,35 @@
                     abrirKpiModal(activeKpiStatus);
                 }
                 mostrarToast("Operação Concluída", `O pneu #${fogo} foi removido do veículo ${frotaAnterior}.`, "success");
+
+                verificarAvisoKmBaixoNaRetirada(fogo, frotaAnterior, kmRodado, pneu);
             });
+        }
+
+        // Checa se existe um alerta ativo do tipo "retirada_abaixo_km" que combina com esse pneu/frota.
+        // Usa o alerta mais especifico (com filtro) encontrado; se nenhum alerta foi configurado,
+        // usa 50.000 km como meta padrao (mesmo valor sugerido ao criar um alerta desse tipo).
+        function verificarAvisoKmBaixoNaRetirada(fogo, frota, kmRodado, pneu) {
+            const caminhao = caminhoes.find(c => c.frota === frota);
+            const candidatos = (alertasConfigurados || []).filter(a => a.tipo === 'retirada_abaixo_km' && a.ativo !== false)
+                .filter(a => (!a.filtro_frota || a.filtro_frota === frota)
+                    && (!a.filtro_tipo || !caminhao || a.filtro_tipo === caminhao.tipo)
+                    && (!a.filtro_modelo || (pneu.modelo || '').toLowerCase() === a.filtro_modelo.toLowerCase()));
+
+            const meta = candidatos.length > 0
+                ? Math.max(...candidatos.map(a => Number(a.valor_meta) || 50000))
+                : 50000;
+
+            if (kmRodado >= meta) return;
+
+            const texto = document.getElementById('textoAvisoKmBaixo');
+            if (texto) {
+                texto.innerHTML = `O pneu <b>#${fogo}</b> foi retirado da frota <b>${frota}</b> com apenas
+                    <b>${kmRodado.toLocaleString('pt-BR')} km</b> rodados — abaixo da meta de
+                    <b>${meta.toLocaleString('pt-BR')} km</b>.<br><br>Vale investigar o motivo (avaria, calibragem, alinhamento, etc.).`;
+            }
+            const modal = document.getElementById('modalAvisoKmBaixo');
+            if (modal) modal.style.display = 'flex';
         }
 
         // LOAD TIRES LINKED FOR PERIODIC CONSECUTIVE YARD ROAD CHECKLISTS
@@ -7121,39 +6193,118 @@
         }
 
         // REAL-TIME SYSTEM LOGS DATA ENGINE
-        let systemLogs = [
-            { time: "2026-08-27 10:15:32", type: "SYSTEM", operator: "SISTEMA", message: "Inicializando Portal de Gestão de Pneus v23", detail: "Versão de engenharia com renderização de alta densidade e mapa SVG realista" },
-            { time: "2026-08-27 10:15:35", type: "SUCCESS", operator: "SISTEMA", message: "Estrutura do banco de dados conectada", detail: "Abas detectadas: PNEUS_CADASTRO, MOVIMENTACOES, VISTORIAS_PATIO, VEICULOS, USUARIOS" },
-            { time: "2026-08-27 10:16:01", type: "LOGIN", operator: "Carlos Santos", message: "Autenticação efetuada com sucesso", detail: "Sessão iniciada na filial DESTRO CASCAVEL" },
-            { time: "2026-08-27 10:18:44", type: "SHEETS", operator: "Carlos Santos", message: "152 Veículos carregados do banco de dados real", detail: "Frota composta por TOCO, TRUCK, 3/4 e VANS" }
-        ];
+        // Buffer local, só pra feedback imediato na sessão atual (drawer de "Quick Logs" e no toast visual).
+        // O registro oficial e persistente fica 100% no banco (tabela `logs`, via acao 'registrar_log');
+        // a aba "Logs de Auditoria" (admin) le de la, nunca desse array.
+        let systemLogs = [];
 
         function adicionarLog(type, message, detail = "") {
             const time = new Date().toISOString().replace('T', ' ').substring(0, 19);
             const log = { time, type, operator: usuarioLogado || "SISTEMA", message, detail };
             systemLogs.unshift(log); // Newer first
+            if (systemLogs.length > 50) systemLogs.length = 50; // buffer local curto, so pra UI
             renderizarLogs();
+            registrarLogBackend(type, message, detail);
         }
 
-        function renderizarLogs() {
+        // Envia o log pro backend (tabela `logs` no PostgreSQL) de forma silenciosa:
+        // sem toast, sem forcar resincronizacao geral. Falha de rede aqui nunca deve
+        // travar a acao que o usuario estava realmente fazendo.
+        function registrarLogBackend(type, message, detail) {
+            if (!sessionToken) return; // sem sessao ainda (ex: log antes do login) -> nao envia
+            try {
+                fetch(N8N_WEBHOOK_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        action: "registrar_log",
+                        operator: usuarioLogado || "SISTEMA",
+                        token: sessionToken,
+                        timestamp: new Date().toISOString(),
+                        data: { tipo: type, mensagem: message, detalhe: detail }
+                    })
+                }).catch(() => { /* silencioso: log em memoria/drawer ja cobre a sessao atual */ });
+            } catch (e) { /* ambiente sem fetch ou similar - ignora */ }
+        }
+
+        // Busca os logs persistidos no banco (ultimos 15 dias) - SOMENTE ADMINISTRADOR.
+        // Essa checagem e so a primeira camada (UX); o backend tambem recusa a acao
+        // 'listar_logs' pra quem nao for administrador, entao nao ha bypass real possivel.
+        function carregarLogsDoBanco() {
+            const container = document.getElementById("logsContainerConsole");
+            if (perfilLogado !== "administrador") {
+                if (container) {
+                    container.innerHTML = `
+                        <div style="color: var(--text-muted); text-align:center; padding: 24px;">
+                            <i class="fa-solid fa-lock" style="font-size:28px; margin-bottom:10px; display:block;"></i>
+                            Esta área é restrita a administradores.
+                        </div>
+                    `;
+                }
+                return;
+            }
+            if (container) {
+                container.innerHTML = `<div style="color: var(--text-muted); text-align:center; padding: 24px;">Carregando logs do banco de dados...</div>`;
+            }
+            fetch(N8N_WEBHOOK_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "listar_logs",
+                    operator: usuarioLogado || "SISTEMA",
+                    token: sessionToken,
+                    timestamp: new Date().toISOString()
+                })
+            })
+                .then(res => res.json())
+                .then(resp => {
+                    if (resp && resp.success && Array.isArray(resp.logs)) {
+                        renderizarLogs(resp.logs);
+                    } else {
+                        mostrarToast("Erro ao Carregar Logs", (resp && resp.message) || "Não foi possível obter os logs do servidor.", "error");
+                        if (container) container.innerHTML = `<div style="color: var(--text-muted); text-align:center; padding: 24px;">Falha ao carregar logs.</div>`;
+                    }
+                })
+                .catch(err => {
+                    console.error("Erro ao buscar logs:", err);
+                    if (container) container.innerHTML = `<div style="color: var(--text-muted); text-align:center; padding: 24px;">Servidor indisponível no momento.</div>`;
+                });
+        }
+
+        // logsParaExibir: quando vem do banco (aba Logs de Auditoria), usa isso; quando chamado
+        // sem argumento (ex: apos adicionarLog), redesenha o drawer rapido com o buffer local.
+        function renderizarLogs(logsParaExibir) {
+            const logs = logsParaExibir || systemLogs;
             const container = document.getElementById("logsContainerConsole");
             if (!container) return;
-            container.innerHTML = systemLogs.map(l => {
+            if (logs.length === 0) {
+                container.innerHTML = `<div style="color: var(--text-muted); text-align:center; padding: 24px;">Nenhum log nos últimos 15 dias.</div>`;
+                return;
+            }
+            container.innerHTML = logs.map(l => {
+                // Aceita tanto o formato local (time/type/operator/message/detail) quanto
+                // o formato vindo do banco (criado_em/tipo/operador/mensagem/detalhe).
+                const time = l.time || l.criado_em || "";
+                const type = (l.type || l.tipo || "").toUpperCase();
+                const operator = l.operator || l.operador || "SISTEMA";
+                const message = l.message || l.mensagem || "";
+                const detail = l.detail || l.detalhe || "";
+
                 let badgeColor = "#64748b"; // gray
-                if (l.type === "SUCCESS") badgeColor = "#10b981"; // green
-                if (l.type === "ERROR") badgeColor = "#ef4444"; // red
-                if (l.type === "UPDATE" || l.type === "EDIT") badgeColor = "#6366f1"; // indigo
-                if (l.type === "LOGIN") badgeColor = "#f59e0b"; // orange
-                if (l.type === "DELETE") badgeColor = "#b91c1c"; // dark red
-                if (l.type === "SHEETS") badgeColor = "#3b82f6"; // blue
+                if (type === "SUCCESS") badgeColor = "#10b981"; // green
+                if (type === "ERROR") badgeColor = "#ef4444"; // red
+                if (type === "UPDATE" || type === "EDIT") badgeColor = "#6366f1"; // indigo
+                if (type === "LOGIN") badgeColor = "#f59e0b"; // orange
+                if (type === "DELETE") badgeColor = "#b91c1c"; // dark red
+                if (type === "SHEETS") badgeColor = "#3b82f6"; // blue
 
                 return `
                     <div style="margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 8px; line-height:1.4; font-size:12.5px;">
-                        <span style="color: #475569; font-weight: 500;">[${l.time}]</span>
-                        <span style="background: ${badgeColor}; color: #fff; padding: 2px 6px; border-radius: var(--radius-md); font-size: 10px; font-weight: bold; margin-right: 8px; display: inline-block; min-width: 65px; text-align: center;">${l.type}</span>
-                        <span style="color: #4F93A6; font-weight: bold; margin-right:6px;">@${escapeHtml(l.operator)}</span> 
-                        <span style="color: #e2e8f0;">${escapeHtml(l.message)}</span>
-                        ${l.detail ? `<div style="color: #94a3b8; font-size: 11.5px; padding-left: 20px; margin-top: 4px; font-family:'Inter', sans-serif;">└─ ${escapeHtml(l.detail)}</div>` : ""}
+                        <span style="color: #475569; font-weight: 500;">[${escapeHtml(String(time))}]</span>
+                        <span style="background: ${badgeColor}; color: #fff; padding: 2px 6px; border-radius: var(--radius-md); font-size: 10px; font-weight: bold; margin-right: 8px; display: inline-block; min-width: 65px; text-align: center;">${escapeHtml(type)}</span>
+                        <span style="color: #4F93A6; font-weight: bold; margin-right:6px;">@${escapeHtml(operator)}</span> 
+                        <span style="color: #e2e8f0;">${escapeHtml(message)}</span>
+                        ${detail ? `<div style="color: #94a3b8; font-size: 11.5px; padding-left: 20px; margin-top: 4px; font-family:'Inter', sans-serif;">└─ ${escapeHtml(detail)}</div>` : ""}
                     </div>
                 `;
             }).join("");
@@ -7161,8 +6312,9 @@
 
         function limparLogsVisualizacao() {
             systemLogs = [];
+            // So limpa o buffer local/drawer - os registros no banco (aba Logs de Auditoria) nao sao apagados aqui.
             renderizarLogs();
-            mostrarToast("Limpeza concluída!", "Terminal de visualização de logs limpo.", "success");
+            mostrarToast("Limpeza concluída!", "Terminal de visualização local limpo (os registros no banco continuam intactos).", "success");
         }
 
         // ADD MULTIPLE LOTE GRID ROWS FIELD HANDLER
@@ -7791,6 +6943,7 @@
                         if (serverData && serverData.caminhoes) caminhoes = serverData.caminhoes;
                         if (serverData && serverData.movimentacoes) movimentacoes = serverData.movimentacoes;
                         if (serverData && serverData.vistorias) vistorias = serverData.vistorias;
+                        if (serverData && serverData.historicoKm) historicoKm = serverData.historicoKm;
 
                         carregarTabelasEPanels();
                         gerarListaSidebarHistorico();
@@ -7848,6 +7001,886 @@
                     </div>
                 `;
             }).join("");
+        }
+
+        // ==========================================
+        // MÃ“DULO DE HISTÃ“RICO DE QUILOMETRAGEM (KM)
+        // ==========================================
+
+        let paginaKmAtual = 1;
+        const ITENS_POR_PAGINA_KM = 25;
+
+        // historicoKm e 100% hidratado via sincronizacao com o backend (acao 'sync' -> historicoKm)
+        // e via a acao 'importar_historico_km' apos uma importacao de conferencia de frota.
+        // Nenhum dado fica hardcoded no HTML/JS nem persistido em localStorage.
+
+        // Mapa de Excecoes: Placa (sem traco/espaco) -> Numero de Frota do SISTEMA (cadastro)
+        // Necessario porque, para esses veiculos especificos, o "NFro" impresso no
+        // relatorio de conferencia (43950.csv) nao bate com a frota usada no cadastro.
+        // Para todos os demais veiculos, NFro do relatorio == frota do sistema.
+        const MAPA_FROTA_EXCECOES = {
+            "ANK0I37": "25201",
+            "ANK0I30": "25202",
+            "DPE0H63": "25203",
+            "ANK0I32": "25204",
+            "EOF4E38": "25414",
+            "EOF4E52": "25415",
+            "EOF4E60": "25417",
+            "EOF4F51": "25418",
+            "EOF4F52": "25419",
+            "EOF4F67": "25422",
+            "EOF4F74": "25425",
+            "EOF4F83": "25426",
+            "EOF4G63": "25423",
+            "EOF4F73": "25424",
+            "EOF4E16": "25413",
+            "EOF4F64": "25421",
+            "EOF4G56": "25430",
+            "EOF4G60": "25432",
+            "EOF4G62": "25433",
+            "EOF4E59": "25416",
+            "EOF4F84": "25427",
+            "EOF4D76": "25601"
+        };
+
+        // Normaliza uma placa para usar como chave do mapa de excecoes (sem traco, espaco ou letra final tipo X)
+        function normalizarPlacaParaMapa(placa) {
+            return (placa || "").toUpperCase().replace(/[\s-]+/g, '');
+        }
+
+        // Resolve a frota correta do SISTEMA a partir da frota lida no relatorio + placa,
+        // aplicando o mapa de excecoes quando necessario.
+        function resolverFrotaSistema(frotaRelatorio, placa) {
+            const chave = normalizarPlacaParaMapa(placa);
+            if (MAPA_FROTA_EXCECOES.hasOwnProperty(chave)) {
+                return MAPA_FROTA_EXCECOES[chave];
+            }
+            return frotaRelatorio;
+        }
+
+        // Busca o veiculo cadastrado (array caminhoes, hidratado via sync com o backend) pela frota do sistema.
+        function buscarVeiculoPorFrota(frotaSistema) {
+            return caminhoes.find(c => String(c.frota).trim() === String(frotaSistema).trim());
+        }
+
+        // Converte string de KM no formato do relatorio pt-BR ("103.154" ou "103.154,50") pra numero.
+        function parseKmBr(valor) {
+            if (valor === null || valor === undefined || valor === '') return 0;
+            if (typeof valor === 'number') return valor;
+            let s = String(valor).trim();
+            if (s.includes(',')) {
+                s = s.replace(/\./g, '').replace(',', '.');
+            } else {
+                s = s.replace(/\./g, '');
+            }
+            const n = parseFloat(s);
+            return isNaN(n) ? 0 : n;
+        }
+
+        // Converte data "DD/MM/AAAA" em timestamp, pra comparar qual leitura e mais recente.
+        function parseDataBrParaTimestamp(str) {
+            if (!str) return 0;
+            const partes = String(str).split('/');
+            if (partes.length !== 3) return 0;
+            const [d, m, y] = partes;
+            const t = new Date(`${y}-${m}-${d}T00:00:00`).getTime();
+            return isNaN(t) ? 0 : t;
+        }
+
+        // Retorna a leitura de KM mais recente (historico_km, vindo 100% do backend) pra uma frota, ou null.
+        function obterUltimoKmFrota(frota) {
+            const alvo = String(frota).trim();
+            let melhor = null;
+            historicoKm.forEach(r => {
+                const f = String(r.Frota || r.Frota_Fisica || r.frota || '').trim();
+                if (f !== alvo) return;
+                const data = r.Data_Emissao || r.data_emissao || '';
+                if (!melhor || parseDataBrParaTimestamp(data) > parseDataBrParaTimestamp(melhor.data)) {
+                    melhor = { km: parseKmBr(r.Km_Atual || r.km_atual), data: data };
+                }
+            });
+            return melhor;
+        }
+
+        function processarTextoConferenciaKM(rawText, nomeArquivo) {
+            if (!nomeArquivo) nomeArquivo = "43950.csv";
+            let dataEmissao = "30/09/2026";
+            const emMatch = rawText.match(/Emissao\.\s*:\s*(\d{2}\/\d{2}\/\d{4})/i);
+            if (emMatch) dataEmissao = emMatch[1];
+
+            const lines = rawText.split(/\r?\n/);
+            const novosRegistros = [];
+            let totalCorrigidos = 0;
+            const divergenciasPlaca = [];
+
+            // Snapshot do KM anterior por frota, capturado ANTES dessa importacao
+            // (historicoKm aqui ainda reflete o que veio do backend na ultima sincronizacao).
+            const kmAnteriorPorFrota = {};
+            historicoKm.forEach(r => {
+                const f = String(r.Frota || r.Frota_Fisica || r.frota || '').trim();
+                if (!f) return;
+                const data = r.Data_Emissao || r.data_emissao || '';
+                if (!kmAnteriorPorFrota[f] || parseDataBrParaTimestamp(data) > parseDataBrParaTimestamp(kmAnteriorPorFrota[f].data)) {
+                    kmAnteriorPorFrota[f] = { km: parseKmBr(r.Km_Atual || r.km_atual), data: data };
+                }
+            });
+
+            // Extrai SOMENTE o que interessa: Data Emissao, Frota, Placa, Km Atual.
+            // Descricao/Peso/Local sao lidos do relatorio so pra ajudar a casar a linha certa
+            // (e resolver o mapa de excecoes), mas nao sao guardados nem enviados ao backend.
+            function registrarLinha(frotaRelatorio, placaLida, km) {
+                const placa = placaLida.replace(/\s+/g, '');
+                const frotaSistema = resolverFrotaSistema(frotaRelatorio, placa);
+                if (frotaSistema !== frotaRelatorio) totalCorrigidos++;
+
+                // Confere se a placa lida bate com a placa cadastrada pra essa frota
+                const veiculoCadastrado = buscarVeiculoPorFrota(frotaSistema);
+                if (veiculoCadastrado) {
+                    const placaCadastro = String(veiculoCadastrado.placa || '').replace(/[\s-]+/g, '').toUpperCase();
+                    const placaRelatorio = placa.replace(/[\s-]+/g, '').toUpperCase();
+                    if (placaCadastro && placaRelatorio && placaCadastro !== placaRelatorio) {
+                        divergenciasPlaca.push({ frota: frotaSistema, placaRelatorio: placa, placaCadastro: veiculoCadastrado.placa });
+                    }
+                }
+
+                novosRegistros.push({
+                    id: 'km_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    Data_Emissao: dataEmissao,
+                    Frota: frotaSistema,
+                    Placa: placa,
+                    Km_Atual: km
+                });
+            }
+
+            lines.forEach(line => {
+                const m = line.match(/^\s*(\d{3,6})\s+(.+?)\s{2,}([A-Z0-9\s]{7,10})\s+(\d+)\s+([SC]\s*-\s*[A-Za-z\s]+?)(?:\s+(\d[\d\.]*))?\s*$/);
+                if (m) {
+                    registrarLinha(m[1].trim(), m[3].trim(), m[6] ? m[6].trim() : "0");
+                }
+            });
+
+            if (novosRegistros.length === 0) {
+                const csvLines = rawText.split(/\r?\n/).filter(l => l.trim().length > 0);
+                if (csvLines.length > 1) {
+                    const sep = csvLines[0].includes(';') ? ';' : ',';
+                    for (let i = 1; i < csvLines.length; i++) {
+                        const cols = csvLines[i].split(sep).map(c => c.replace(/"/g, '').trim());
+                        if (cols.length >= 4) {
+                            registrarLinha(cols[1] || '', cols[3] || '', cols[6] || '0');
+                        }
+                    }
+                }
+            }
+
+            if (novosRegistros.length > 0) {
+                // Nao grava nada localmente: envia os registros pro backend (tabela historico_km no
+                // PostgreSQL) via n8n. O proprio enviarRequisicaoN8n ja ressincroniza (sincronizarBancoDeDados)
+                // apos a gravacao, entao historicoKm fica 100% hidratado a partir da nuvem.
+                adicionarLog("SHEETS", "Envio de Conferência de Frota " + nomeArquivo + " para o banco de dados", novosRegistros.length + " veículos lidos | Data Emissão: " + dataEmissao + " | Corrigidos pelo mapa de exceções: " + totalCorrigidos);
+                enviarRequisicaoN8n("importar_historico_km", { registros: novosRegistros, nomeArquivo: nomeArquivo });
+
+                const frotasComLeitura = new Set(novosRegistros.map(r => r.Frota));
+                const semLeitura = caminhoes.filter(c => !frotasComLeitura.has(String(c.frota).trim()));
+                exibirResultadoImportacaoKm(novosRegistros, kmAnteriorPorFrota, semLeitura, nomeArquivo);
+
+                if (divergenciasPlaca.length > 0) {
+                    mostrarToast(
+                        "Divergência de Placa",
+                        divergenciasPlaca.length + " frota(s) com placa do relatório diferente do cadastro. Veja os Logs para detalhes.",
+                        "warning"
+                    );
+                    const detalhe = divergenciasPlaca.map(d => "Frota " + d.frota + ": relatório=" + d.placaRelatorio + " x cadastro=" + d.placaCadastro).join(" | ");
+                    adicionarLog("ERROR", "Divergência de placa na conferência de frota (" + nomeArquivo + ")", detalhe);
+                }
+            } else {
+                mostrarToast("Aviso de Leitura", "Nenhum veículo válido encontrado no formato esperado.", "warning");
+            }
+        }
+
+        // Mostra o popup com o resultado da importacao: quem atualizou (com km anterior/atual/diferenca)
+        // e quais frotas cadastradas nao tiveram leitura nesse arquivo.
+        function exibirResultadoImportacaoKm(registros, kmAnteriorPorFrota, semLeitura, nomeArquivo) {
+            const sub = document.getElementById("resultadoKmSubtitulo");
+            if (sub) sub.innerText = "Arquivo: " + nomeArquivo + " | " + registros.length + " veículo(s) lido(s)";
+
+            const elSucesso = document.getElementById("resumoKmSucesso");
+            if (elSucesso) elSucesso.innerText = registros.length;
+            const elSemLeitura = document.getElementById("resumoKmSemLeitura");
+            if (elSemLeitura) elSemLeitura.innerText = semLeitura.length;
+
+            const corpoSucesso = document.getElementById("corpoResultadoKmSucesso");
+            if (corpoSucesso) {
+                corpoSucesso.innerHTML = registros.map(r => {
+                    const atual = parseKmBr(r.Km_Atual);
+                    const anteriorInfo = kmAnteriorPorFrota[r.Frota];
+                    const anterior = anteriorInfo ? anteriorInfo.km : null;
+                    const diferenca = anterior !== null ? (atual - anterior) : null;
+                    const corDiferenca = diferenca === null ? 'text-[#7a7365]' : (diferenca < 0 ? 'text-red-600' : 'text-emerald-700');
+                    const sinal = diferenca !== null && diferenca >= 0 ? '+' : '';
+                    return `
+                        <tr>
+                            <td class="py-2 px-2 font-bold text-[#2b4068]">#${escapeHtml(r.Frota)}</td>
+                            <td class="py-2 px-2 font-mono">${escapeHtml(r.Placa)}</td>
+                            <td class="py-2 px-2 text-right text-[#7a7365]">${anterior !== null ? anterior.toLocaleString('pt-BR') + ' km' : '—'}</td>
+                            <td class="py-2 px-2 text-right font-semibold">${atual.toLocaleString('pt-BR')} km</td>
+                            <td class="py-2 px-2 text-right font-bold ${corDiferenca}">${diferenca !== null ? sinal + diferenca.toLocaleString('pt-BR') + ' km' : '—'}</td>
+                        </tr>
+                    `;
+                }).join("");
+            }
+
+            const corpoSem = document.getElementById("corpoResultadoKmSemLeitura");
+            if (corpoSem) {
+                corpoSem.innerHTML = semLeitura.length === 0
+                    ? `<tr><td colspan="2" class="text-center py-4 text-[#7a7365]">Todas as frotas cadastradas tiveram leitura neste arquivo.</td></tr>`
+                    : semLeitura.map(c => `
+                        <tr>
+                            <td class="py-2 px-2 font-bold text-[#2b4068]">#${escapeHtml(c.frota)}</td>
+                            <td class="py-2 px-2 font-mono">${escapeHtml(c.placa || '-')}</td>
+                        </tr>
+                    `).join("");
+            }
+
+            const modal = document.getElementById("modalResultadoImportacaoKm");
+            if (modal) modal.style.display = "flex";
+        }
+
+        function fecharModalResultadoImportacaoKm() {
+            const modal = document.getElementById("modalResultadoImportacaoKm");
+            if (modal) modal.style.display = "none";
+        }
+
+        // Pra cada pneu instalado: km de instalacao (ultima movimentacao INSTALACAO ativa),
+        // km atual da frota (ultima leitura importada), km rodado pelo pneu e desgaste por 1.000km.
+        function renderizarAnaliseDesgasteKm() {
+            const tbody = document.getElementById("tabelaAnaliseDesgasteKm");
+            if (!tbody) return;
+
+            const instalados = pneus.filter(p => p.status_atual === "RODANDO" && p.caminhao_atual);
+
+            if (instalados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-6 text-[#7a7365]">Nenhum pneu instalado em veículo no momento.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = instalados.map(p => {
+                const instalacoes = movimentacoes.filter(m => m.fogo === p.fogo && m.tipo === "INSTALACAO" && m.frota === p.caminhao_atual);
+                const ultimaInstalacao = instalacoes.sort((a, b) => new Date(b.data_evento || 0) - new Date(a.data_evento || 0))[0];
+                const kmInstalacao = ultimaInstalacao ? (parseFloat(ultimaInstalacao.km_inicial) || 0) : null;
+
+                const leituraAtual = obterUltimoKmFrota(p.caminhao_atual);
+                const kmAtualFrota = leituraAtual ? leituraAtual.km : null;
+
+                const kmRodado = (kmInstalacao !== null && kmAtualFrota !== null && kmAtualFrota >= kmInstalacao)
+                    ? (kmAtualFrota - kmInstalacao) : null;
+                const mmDesgastado = Math.max(0, (parseFloat(p.mm_inicial) || 0) - (parseFloat(p.mm_atual) || 0));
+                const desgastePor1000 = (kmRodado && kmRodado > 0) ? (mmDesgastado / kmRodado * 1000) : null;
+                const corAlerta = (desgastePor1000 !== null && desgastePor1000 > 1.5) ? 'text-red-600' : 'text-[#22201b]';
+
+                return `
+                    <tr class="hover:bg-[#f9f8f5] transition-colors">
+                        <td class="py-2.5 px-3 font-bold text-[#2b4068]">#${escapeHtml(p.fogo)}</td>
+                        <td class="py-2.5 px-3">#${escapeHtml(p.caminhao_atual)}</td>
+                        <td class="py-2.5 px-3">${escapeHtml((p.posicao_atual || '-').replace(/_/g, ' '))}</td>
+                        <td class="py-2.5 px-3 text-right text-[#7a7365]">${kmInstalacao !== null ? kmInstalacao.toLocaleString('pt-BR') + ' km' : '—'}</td>
+                        <td class="py-2.5 px-3 text-right text-[#7a7365]">${kmAtualFrota !== null ? kmAtualFrota.toLocaleString('pt-BR') + ' km' : '—'}</td>
+                        <td class="py-2.5 px-3 text-right font-semibold">${kmRodado !== null ? kmRodado.toLocaleString('pt-BR') + ' km' : '—'}</td>
+                        <td class="py-2.5 px-3 text-right">${mmDesgastado.toFixed(1)} mm</td>
+                        <td class="py-2.5 px-3 text-right font-bold ${corAlerta}">${desgastePor1000 !== null ? desgastePor1000.toFixed(2) + ' mm' : '—'}</td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        // ==========================================
+        // MÓDULO: ALERTAS & RELATÓRIOS (CPK, movimentação, alertas por e-mail)
+        // ==========================================
+
+        // Ponto de entrada da aba - chamado pelo changeTab('alertas').
+        function carregarAbaAlertas() {
+            popularFiltroFrotaAlerta();
+            renderizarCpk();
+            renderizarMovimentacaoPneus();
+            listarAlertasBackend();
+        }
+
+        // KM rodado por um pneu num ciclo ja encerrado (soma das RETIRADAs) + ciclo atual se RODANDO.
+        function calcularKmRodadoTotalPneu(fogo) {
+            let total = 0;
+            movimentacoes.filter(m => m.fogo === fogo && m.tipo === 'RETIRADA').forEach(m => { total += Number(m.km_rodado) || 0; });
+
+            const p = pneus.find(pp => pp.fogo === fogo);
+            if (p && p.status_atual === 'RODANDO' && p.caminhao_atual) {
+                const inst = movimentacoes.filter(m => m.fogo === fogo && m.tipo === 'INSTALACAO' && m.frota === p.caminhao_atual)
+                    .sort((a, b) => new Date(b.data_evento || 0) - new Date(a.data_evento || 0))[0];
+                const leitura = obterUltimoKmFrota(p.caminhao_atual);
+                if (inst && leitura && leitura.km >= Number(inst.km_inicial || 0)) {
+                    total += (leitura.km - Number(inst.km_inicial || 0));
+                }
+            }
+            return total;
+        }
+
+        function calcularCpkPorPneu() {
+            return pneus.map(p => {
+                const custoTotal = (Number(p.valor_compra) || 0) + (Number(p.valor_recapes) || 0) + (Number(p.valor_consertos) || 0);
+                const kmRodado = calcularKmRodadoTotalPneu(p.fogo);
+                const cpk = kmRodado > 0 ? (custoTotal / kmRodado) : null;
+                return { fogo: p.fogo, marcaMedida: `${p.marca || ''} ${p.medida || ''}`.trim(), status: p.status_atual, custoTotal, kmRodado, cpk };
+            }).filter(r => r.custoTotal > 0 || r.kmRodado > 0);
+        }
+
+        function calcularCpkPorFrota() {
+            return caminhoes.map(c => {
+                const fogosFrota = [...new Set(movimentacoes.filter(m => m.frota === c.frota).map(m => m.fogo))];
+                let custoTotal = 0, kmRodado = 0;
+                fogosFrota.forEach(fogo => {
+                    const p = pneus.find(pp => pp.fogo === fogo);
+                    if (p) custoTotal += (Number(p.valor_compra) || 0) + (Number(p.valor_recapes) || 0) + (Number(p.valor_consertos) || 0);
+                    movimentacoes.filter(m => m.fogo === fogo && m.tipo === 'RETIRADA' && m.frota === c.frota).forEach(m => { kmRodado += Number(m.km_rodado) || 0; });
+                    if (p && p.status_atual === 'RODANDO' && p.caminhao_atual === c.frota) {
+                        const inst = movimentacoes.filter(m => m.fogo === fogo && m.tipo === 'INSTALACAO' && m.frota === c.frota)
+                            .sort((a, b) => new Date(b.data_evento || 0) - new Date(a.data_evento || 0))[0];
+                        const leitura = obterUltimoKmFrota(c.frota);
+                        if (inst && leitura && leitura.km >= Number(inst.km_inicial || 0)) kmRodado += (leitura.km - Number(inst.km_inicial || 0));
+                    }
+                });
+                const cpk = kmRodado > 0 ? (custoTotal / kmRodado) : null;
+                return { frota: c.frota, placa: c.placa, tipo: c.tipo, numPneus: fogosFrota.length, custoTotal, kmRodado, cpk };
+            }).filter(r => r.numPneus > 0);
+        }
+
+        function brMoeda(v) { return v === null || v === undefined ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+        function renderizarCpk() {
+            const porFrota = calcularCpkPorFrota();
+            const tbodyFrota = document.getElementById('tabelaCpkFrota');
+            if (tbodyFrota) {
+                tbodyFrota.innerHTML = porFrota.length === 0
+                    ? `<tr><td colspan="7" class="text-center py-6 text-[#7a7365]">Sem dados suficientes ainda.</td></tr>`
+                    : porFrota.map(r => `
+                        <tr class="hover:bg-[#f9f8f5]">
+                            <td class="py-2 px-3 font-bold text-[#2b4068]">#${escapeHtml(r.frota)}</td>
+                            <td class="py-2 px-3 font-mono">${escapeHtml(r.placa)}</td>
+                            <td class="py-2 px-3">${escapeHtml(r.tipo || '-')}</td>
+                            <td class="py-2 px-3 text-right">${r.numPneus}</td>
+                            <td class="py-2 px-3 text-right">${brMoeda(r.custoTotal)}</td>
+                            <td class="py-2 px-3 text-right">${r.kmRodado.toLocaleString('pt-BR')} km</td>
+                            <td class="py-2 px-3 text-right font-bold">${r.cpk !== null ? brMoeda(r.cpk) + '/km' : '—'}</td>
+                        </tr>
+                    `).join('');
+            }
+
+            const porPneu = calcularCpkPorPneu();
+            const tbodyPneu = document.getElementById('tabelaCpkPneu');
+            if (tbodyPneu) {
+                tbodyPneu.innerHTML = porPneu.length === 0
+                    ? `<tr><td colspan="6" class="text-center py-6 text-[#7a7365]">Sem dados suficientes ainda.</td></tr>`
+                    : porPneu.map(r => `
+                        <tr class="hover:bg-[#f9f8f5]">
+                            <td class="py-2 px-3 font-bold text-[#2b4068]">#${escapeHtml(r.fogo)}</td>
+                            <td class="py-2 px-3">${escapeHtml(r.marcaMedida)}</td>
+                            <td class="py-2 px-3">${escapeHtml(r.status)}</td>
+                            <td class="py-2 px-3 text-right">${brMoeda(r.custoTotal)}</td>
+                            <td class="py-2 px-3 text-right">${r.kmRodado.toLocaleString('pt-BR')} km</td>
+                            <td class="py-2 px-3 text-right font-bold">${r.cpk !== null ? brMoeda(r.cpk) + '/km' : '—'}</td>
+                        </tr>
+                    `).join('');
+            }
+        }
+
+        function renderizarMovimentacaoPneus() {
+            const container = document.getElementById('cardsMovimentacaoPneus');
+            if (!container) return;
+            const limite = Date.now() - 30 * 86400000;
+            const periodo = movimentacoes.filter(m => new Date(m.data_evento || 0).getTime() >= limite);
+            const comprados = periodo.filter(m => m.tipo === 'COMPRA').length;
+            const instalados = periodo.filter(m => m.tipo === 'INSTALACAO').length;
+            const retirados = periodo.filter(m => m.tipo === 'RETIRADA').length;
+            const recapados = periodo.filter(m => m.tipo === 'RECAPE').length;
+            const descartados = pneus.filter(p => p.status_atual === 'DESCARTE' && p.descarte_data && new Date(p.descarte_data).getTime() >= limite).length;
+
+            const cards = [
+                { label: 'Comprados', valor: comprados, cor: '#2b4068' },
+                { label: 'Instalados', valor: instalados, cor: '#0f9d58' },
+                { label: 'Retirados', valor: retirados, cor: '#c77e00' },
+                { label: 'Recapados', valor: recapados, cor: '#6366f1' },
+                { label: 'Descartados', valor: descartados, cor: '#d93025' }
+            ];
+            container.innerHTML = cards.map(c => `
+                <div class="bg-[#f9f8f5] rounded-xl border border-[#e2ddd2] p-3 text-center">
+                    <div class="text-xl font-bold" style="color:${c.cor}">${c.valor}</div>
+                    <div class="text-[10px] uppercase tracking-wide text-[#7a7365]">${c.label}</div>
+                </div>
+            `).join('');
+        }
+
+        function popularFiltroFrotaAlerta() {
+            const sel = document.getElementById('alertaFiltroFrota');
+            if (!sel) return;
+            const atual = sel.value;
+            sel.innerHTML = '<option value="">Todas</option>' + caminhoes.map(c => `<option value="${escapeHtml(c.frota)}">#${escapeHtml(c.frota)} — ${escapeHtml(c.placa)}</option>`).join('');
+            sel.value = atual;
+        }
+
+        function listarAlertasBackend() {
+            const tbody = document.getElementById('tabelaAlertasCorpo');
+            if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-[#7a7365]">Carregando...</td></tr>`;
+            fetch(N8N_WEBHOOK_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "listar_alertas", operator: usuarioLogado || "SISTEMA", token: sessionToken, timestamp: new Date().toISOString() })
+            })
+                .then(res => res.json())
+                .then(resp => {
+                    if (resp && resp.success && Array.isArray(resp.alertas)) {
+                        alertasConfigurados = resp.alertas;
+                        renderizarTabelaAlertas();
+                    } else if (tbody) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-[#7a7365]">Não foi possível carregar os alertas.</td></tr>`;
+                    }
+                })
+                .catch(() => { if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-[#7a7365]">Servidor indisponível.</td></tr>`; });
+        }
+
+        const ROTULOS_TIPO_ALERTA = {
+            meta_km_pneu: 'Meta de KM por pneu',
+            retirada_abaixo_km: 'Retirada abaixo do KM mínimo',
+            relatorio_km: 'Relatório — KM rodado',
+            relatorio_cpk: 'Relatório — CPK',
+            relatorio_movimentacao: 'Relatório — Movimentação'
+        };
+
+        function renderizarTabelaAlertas() {
+            const tbody = document.getElementById('tabelaAlertasCorpo');
+            if (!tbody) return;
+            if (alertasConfigurados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-[#7a7365]">Nenhum alerta configurado ainda.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = alertasConfigurados.map(a => {
+                const filtros = [a.filtro_frota ? 'Frota ' + a.filtro_frota : null, a.filtro_tipo, a.filtro_modelo].filter(Boolean).join(' / ') || 'Todos';
+                const metaOuPeriodo = a.periodicidade ? (a.periodicidade === 'semanal' ? 'Semanal' : 'Mensal') : (a.valor_meta ? Number(a.valor_meta).toLocaleString('pt-BR') + ' km' : '—');
+                return `
+                    <tr class="hover:bg-[#f9f8f5]">
+                        <td class="py-2 px-3 font-semibold">${escapeHtml(a.nome)}</td>
+                        <td class="py-2 px-3">${escapeHtml(ROTULOS_TIPO_ALERTA[a.tipo] || a.tipo)}</td>
+                        <td class="py-2 px-3 text-[#7a7365]">${escapeHtml(filtros)}</td>
+                        <td class="py-2 px-3">${escapeHtml(metaOuPeriodo)}</td>
+                        <td class="py-2 px-3 text-[#7a7365]">${escapeHtml(a.email_destino)}</td>
+                        <td class="py-2 px-3 text-center">
+                            ${a.ativo !== false ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Ativo</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-500 border border-gray-200">Inativo</span>'}
+                        </td>
+                        <td class="py-2 px-3 text-center whitespace-nowrap">
+                            <button onclick='abrirModalEditarAlerta(${JSON.stringify(a.id)})' class="text-[#2b4068] hover:underline text-[11px] mr-2"><i class="fa-solid fa-pen"></i> Editar</button>
+                            <button onclick='excluirAlerta(${JSON.stringify(a.id)})' class="text-red-600 hover:underline text-[11px]"><i class="fa-solid fa-trash"></i> Excluir</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function atualizarCamposAlerta() {
+            const tipo = document.getElementById('alertaTipo').value;
+            const ehRelatorio = tipo.startsWith('relatorio_');
+            document.getElementById('campoValorMeta').style.display = ehRelatorio ? 'none' : 'block';
+            document.getElementById('campoPeriodicidade').style.display = ehRelatorio ? 'block' : 'none';
+            document.getElementById('alertaValorMeta').required = !ehRelatorio;
+            const dica = document.getElementById('dicaValorMeta');
+            if (dica) dica.innerText = tipo === 'retirada_abaixo_km' ? 'Padrão: 50.000 km — avisa quando o pneu roda MENOS que isso' : 'Padrão: 50.000 km — avisa quando o pneu roda PELO MENOS isso';
+        }
+
+        function abrirModalNovoAlerta() {
+            document.getElementById('formAlerta').reset();
+            document.getElementById('alertaId').value = '';
+            document.getElementById('tituloModalAlerta').innerText = 'Criar Novo Alerta';
+            document.getElementById('alertaValorMeta').value = 50000;
+            popularFiltroFrotaAlerta();
+            atualizarCamposAlerta();
+            document.getElementById('modalAlerta').style.display = 'flex';
+        }
+
+        function abrirModalEditarAlerta(id) {
+            const a = alertasConfigurados.find(x => x.id === id);
+            if (!a) return;
+            popularFiltroFrotaAlerta();
+            document.getElementById('alertaId').value = a.id;
+            document.getElementById('tituloModalAlerta').innerText = 'Editar Alerta';
+            document.getElementById('alertaNome').value = a.nome || '';
+            document.getElementById('alertaTipo').value = a.tipo || 'meta_km_pneu';
+            document.getElementById('alertaFiltroFrota').value = a.filtro_frota || '';
+            document.getElementById('alertaFiltroTipo').value = a.filtro_tipo || '';
+            document.getElementById('alertaFiltroModelo').value = a.filtro_modelo || '';
+            document.getElementById('alertaValorMeta').value = a.valor_meta || 50000;
+            document.getElementById('alertaPeriodicidade').value = a.periodicidade || 'semanal';
+            document.getElementById('alertaEmail').value = a.email_destino || '';
+            document.getElementById('alertaAtivo').checked = a.ativo !== false;
+            atualizarCamposAlerta();
+            document.getElementById('modalAlerta').style.display = 'flex';
+        }
+
+        function fecharModalAlerta() {
+            document.getElementById('modalAlerta').style.display = 'none';
+        }
+
+        function salvarAlerta(e) {
+            e.preventDefault();
+            const payload = {
+                id: document.getElementById('alertaId').value || undefined,
+                nome: document.getElementById('alertaNome').value.trim(),
+                tipo: document.getElementById('alertaTipo').value,
+                filtro_frota: document.getElementById('alertaFiltroFrota').value || null,
+                filtro_tipo: document.getElementById('alertaFiltroTipo').value || null,
+                filtro_modelo: document.getElementById('alertaFiltroModelo').value.trim() || null,
+                valor_meta: document.getElementById('alertaValorMeta').value || null,
+                periodicidade: document.getElementById('alertaPeriodicidade').value,
+                email_destino: document.getElementById('alertaEmail').value.trim(),
+                ativo: document.getElementById('alertaAtivo').checked
+            };
+            fecharModalAlerta();
+            enviarRequisicaoN8n('criar_alerta', payload).then(() => listarAlertasBackend());
+            adicionarLog('UPDATE', 'Alerta salvo: ' + payload.nome, ROTULOS_TIPO_ALERTA[payload.tipo] || payload.tipo);
+        }
+
+        function excluirAlerta(id) {
+            const a = alertasConfigurados.find(x => x.id === id);
+            solicitarConfirmacaoAcao('Excluir Alerta', `Tem certeza que deseja excluir o alerta "${a ? escapeHtml(a.nome) : id}"?`, () => {
+                enviarRequisicaoN8n('excluir_alerta', { id }).then(() => listarAlertasBackend());
+                adicionarLog('DELETE', 'Alerta excluído: ' + (a ? a.nome : id), '');
+            });
+        }
+
+        // ---- Exportação em PDF (paisagem), via janela de impressão do navegador ----
+        function gerarPdfRelatorio(tipoRelatorio) {
+            let titulo = '', corpoHtml = '';
+            const dataGeracao = new Date().toLocaleString('pt-BR');
+
+            if (tipoRelatorio === 'cpk') {
+                titulo = 'Relatório de CPK — Custo por Quilômetro';
+                const porFrota = calcularCpkPorFrota();
+                const porPneu = calcularCpkPorPneu();
+                corpoHtml = `
+                    <h2>Por Frota</h2>
+                    <table><thead><tr><th>Frota</th><th>Placa</th><th>Tipo</th><th>Nº Pneus</th><th>Custo Total</th><th>KM Rodado</th><th>CPK</th></tr></thead>
+                    <tbody>${porFrota.map(r => `<tr><td>#${r.frota}</td><td>${r.placa}</td><td>${r.tipo || '-'}</td><td>${r.numPneus}</td><td>${brMoeda(r.custoTotal)}</td><td>${r.kmRodado.toLocaleString('pt-BR')} km</td><td>${r.cpk !== null ? brMoeda(r.cpk) + '/km' : '—'}</td></tr>`).join('')}</tbody></table>
+                    <h2>Por Pneu</h2>
+                    <table><thead><tr><th>Fogo</th><th>Marca/Medida</th><th>Status</th><th>Custo Total</th><th>KM Rodado</th><th>CPK</th></tr></thead>
+                    <tbody>${porPneu.map(r => `<tr><td>#${r.fogo}</td><td>${r.marcaMedida}</td><td>${r.status}</td><td>${brMoeda(r.custoTotal)}</td><td>${r.kmRodado.toLocaleString('pt-BR')} km</td><td>${r.cpk !== null ? brMoeda(r.cpk) + '/km' : '—'}</td></tr>`).join('')}</tbody></table>
+                `;
+            } else if (tipoRelatorio === 'movimentacao') {
+                titulo = 'Relatório de Movimentação de Pneus (30 dias)';
+                const limite = Date.now() - 30 * 86400000;
+                const periodo = movimentacoes.filter(m => new Date(m.data_evento || 0).getTime() >= limite);
+                const porTipo = ['COMPRA', 'INSTALACAO', 'RETIRADA', 'RECAPE'].map(t => ({ tipo: t, qtd: periodo.filter(m => m.tipo === t).length }));
+                corpoHtml = `
+                    <table><thead><tr><th>Tipo de Movimentação</th><th>Quantidade (30 dias)</th></tr></thead>
+                    <tbody>${porTipo.map(r => `<tr><td>${r.tipo}</td><td>${r.qtd}</td></tr>`).join('')}</tbody></table>
+                `;
+            } else if (tipoRelatorio === 'km') {
+                titulo = 'Relatório de KM Rodado por Frota';
+                corpoHtml = `
+                    <table><thead><tr><th>Frota</th><th>Placa</th><th>Tipo</th><th>KM Atual</th><th>Data da Leitura</th></tr></thead>
+                    <tbody>${caminhoes.map(c => { const l = obterUltimoKmFrota(c.frota); return `<tr><td>#${c.frota}</td><td>${c.placa}</td><td>${c.tipo || '-'}</td><td>${l ? l.km.toLocaleString('pt-BR') + ' km' : '—'}</td><td>${l ? l.data : '—'}</td></tr>`; }).join('')}</tbody></table>
+                `;
+            }
+
+            const janela = window.open('', '_blank');
+            janela.document.write(`
+                <!DOCTYPE html><html><head><meta charset="utf-8"><title>${titulo}</title>
+                <style>
+                    @page { size: landscape; margin: 14mm; }
+                    body { font-family: Arial, sans-serif; color:#22201b; padding:0 10px; }
+                    h1 { font-size:18px; margin-bottom:2px; }
+                    .sub { font-size:11px; color:#7a7365; margin-bottom:18px; }
+                    h2 { font-size:13px; margin-top:22px; border-bottom:1px solid #ccc; padding-bottom:4px; }
+                    table { width:100%; border-collapse:collapse; margin-top:8px; font-size:11px; }
+                    th, td { border:1px solid #ccc; padding:6px 8px; text-align:left; }
+                    th { background:#f2f1ec; }
+                </style></head>
+                <body>
+                    <h1>${titulo}</h1>
+                    <div class="sub">COMERCIAL DESTRO LTDA — Gerado em ${dataGeracao}</div>
+                    ${corpoHtml}
+                </body></html>
+            `);
+            janela.document.close();
+            janela.focus();
+            setTimeout(() => janela.print(), 300);
+        }
+
+        // Le um arquivo (File) e envia o conteudo para o parser de conferencia de KM.
+        // Usado tanto pelo input de clique quanto pelo drag-and-drop.
+        function lerEProcessarArquivoKm(file) {
+            if (!file) return;
+
+            const nomeValido = /\.(csv|txt)$/i.test(file.name);
+            if (!nomeValido) {
+                mostrarToast("Formato Inv\u00e1lido", "Envie um arquivo .CSV ou .TXT.", "warning");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                processarTextoConferenciaKM(content, file.name);
+            };
+            reader.onerror = function() {
+                mostrarToast("Erro de Leitura", "N\u00e3o foi poss\u00edvel ler o arquivo " + file.name + ".", "danger");
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function processarUploadKmFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            lerEProcessarArquivoKm(file);
+            event.target.value = '';
+        }
+
+        // ---- Suporte a Drag-and-Drop no dropzoneKmArea ----
+        function handleDragOverKm(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dz = document.getElementById('dropzoneKmArea');
+            if (dz) {
+                dz.classList.add('border-[#2b4068]');
+                dz.classList.add('bg-[#eef1f7]');
+            }
+        }
+
+        function handleDragLeaveKm(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dz = document.getElementById('dropzoneKmArea');
+            if (dz) {
+                dz.classList.remove('border-[#2b4068]');
+                dz.classList.remove('bg-[#eef1f7]');
+            }
+        }
+
+        function handleDropKm(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const dz = document.getElementById('dropzoneKmArea');
+            if (dz) {
+                dz.classList.remove('border-[#2b4068]');
+                dz.classList.remove('bg-[#eef1f7]');
+            }
+            const dt = event.dataTransfer;
+            const file = dt && dt.files && dt.files[0];
+            if (!file) return;
+            lerEProcessarArquivoKm(file);
+        }
+
+        // Rede de seguranca: impede que o navegador abra o arquivo numa aba nova
+        // caso o usuario solte o arquivo alguns pixels fora da caixa do dropzone.
+        window.addEventListener('dragover', function(e) { e.preventDefault(); });
+        window.addEventListener('drop', function(e) {
+            if (!e.target.closest || !e.target.closest('#dropzoneKmArea')) {
+                e.preventDefault();
+            }
+        });
+
+        function carregarArquivo43950Exemplo() {
+            mostrarToast("Carregando 43950.csv", "Buscando arquivo de conferência no servidor...", "info");
+            fetch('43950.csv')
+                .then(res => res.text())
+                .then(txt => {
+                    processarTextoConferenciaKM(txt, "43950.csv");
+                })
+                .catch(err => {
+                    console.error("Erro ao buscar 43950.csv:", err);
+                    mostrarToast("Arquivo não encontrado", "Não foi possível localizar 43950.csv no servidor. Envie o arquivo manualmente pelo dropzone.", "error");
+                });
+        }
+
+        function carregarTabelaHistoricoKm() {
+            // historicoKm so e preenchido via sincronizacao com o backend (acao 'sync') -
+            // nao existe mais fallback/seed local; se estiver vazio, a tabela so volta a
+            // mostrar dados apos o proximo sincronizarBancoDeDados() bem-sucedido.
+            renderizarAnaliseDesgasteKm();
+
+            const badgeEl = document.getElementById("badge-total-historico-km");
+            if (badgeEl) badgeEl.innerText = historicoKm.length;
+
+            const kmiTotal = document.getElementById("kmiTotalRegistros");
+            if (kmiTotal) kmiTotal.innerText = historicoKm.length;
+
+            const frotasUnicas = new Set(historicoKm.map(r => r.Frota || r.Frota_Fisica || r.frota)).size;
+            const kmiFrotas = document.getElementById("kmiFrotasUnicas");
+            if (kmiFrotas) kmiFrotas.innerText = frotasUnicas;
+
+            const datasDisponiveis = Array.from(new Set(historicoKm.map(r => r.Data_Emissao || r.data_emissao))).filter(Boolean);
+            const kmiEmissao = document.getElementById("kmiUltimaEmissao");
+            if (kmiEmissao) kmiEmissao.innerText = datasDisponiveis[0] || "-";
+
+            const selData = document.getElementById("filtroDataKm");
+            if (selData) {
+                const valAtual = selData.value;
+                selData.innerHTML = '<option value="TODOS">Todas as Datas (' + datasDisponiveis.length + ')</option>' +
+                    datasDisponiveis.map(d => '<option value="' + d + '">' + d + '</option>').join("");
+                if (datasDisponiveis.includes(valAtual)) selData.value = valAtual;
+            }
+
+            let somaKm = 0, countKm = 0;
+            historicoKm.forEach(r => {
+                const val = parseFloat((r.Km_Atual || r.km_atual || '0').replace(/\./g, '').replace(',', '.'));
+                if (!isNaN(val) && val > 0) {
+                    somaKm += val;
+                    countKm++;
+                }
+            });
+            const kmMedioVal = countKm > 0 ? Math.round(somaKm / countKm) : 0;
+            const kmiKmMedio = document.getElementById("kmiKmMedio");
+            if (kmiKmMedio) kmiKmMedio.innerText = kmMedioVal.toLocaleString('pt-BR') + " km";
+
+            filtrarTabelaKm();
+        }
+
+        function filtrarTabelaKm() {
+            const busca = (document.getElementById("buscaKmFiltro")?.value || "").toLowerCase().trim();
+            const dataFiltro = document.getElementById("filtroDataKm")?.value || "TODOS";
+
+            const filtrados = historicoKm.filter(r => {
+                const dataEmissao = r.Data_Emissao || r.data_emissao || "";
+                const frota = (r.Frota || r.Frota_Fisica || r.frota || "").toLowerCase();
+                const placa = (r.Placa || r.placa || "").toLowerCase();
+
+                const matchBusca = !busca || frota.includes(busca) || placa.includes(busca);
+                const matchData = dataFiltro === "TODOS" || dataEmissao === dataFiltro;
+
+                return matchBusca && matchData;
+            });
+
+            const totalPaginas = Math.ceil(filtrados.length / ITENS_POR_PAGINA_KM) || 1;
+            if (paginaKmAtual > totalPaginas) paginaKmAtual = 1;
+            if (paginaKmAtual < 1) paginaKmAtual = 1;
+
+            const inicio = (paginaKmAtual - 1) * ITENS_POR_PAGINA_KM;
+            const paginaItens = filtrados.slice(inicio, inicio + ITENS_POR_PAGINA_KM);
+
+            const tbody = document.getElementById("tabelaKmCorpo");
+            if (!tbody) return;
+
+            if (paginaItens.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-8 text-[#7a7365]">
+                            <i class="fa-solid fa-gauge text-2xl mb-2 block text-[#e2ddd2]"></i>
+                            Nenhum registro de quilometragem encontrado com os filtros selecionados.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = paginaItens.map(r => {
+                    const dEmissao = r.Data_Emissao || r.data_emissao || "-";
+                    const frota = r.Frota || r.Frota_Fisica || r.frota || "-";
+                    const placa = r.Placa || r.placa || "-";
+                    const km = r.Km_Atual || r.km_atual || "0";
+
+                    return `
+                        <tr class="hover:bg-[#f9f8f5] transition-colors">
+                            <td class="py-2.5 px-3 font-semibold text-[#22201b]">${escapeHtml(dEmissao)}</td>
+                            <td class="py-2.5 px-3 font-bold text-[#2b4068]">#${escapeHtml(frota)}</td>
+                            <td class="py-2.5 px-3 font-mono font-bold text-[#22201b]">${escapeHtml(placa)}</td>
+                            <td class="py-2.5 px-3 text-right font-bold text-[#22201b] t-num">${escapeHtml(km)} km</td>
+                            <td class="py-2.5 px-3 text-center">
+                                <button onclick="abrirEvolucaoKmVeiculo('${escapeHtml(frota)}')" class="btn-editorial-secondary px-2.5 py-1 rounded-lg text-[11px] font-medium" title="Ver evolução">
+                                    <i class="fa-solid fa-chart-line text-[#2b4068]"></i> Histórico
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join("");
+            }
+
+            const pagEl = document.getElementById("paginacaoKm");
+            if (pagEl) {
+                const fim = Math.min(inicio + ITENS_POR_PAGINA_KM, filtrados.length);
+                pagEl.innerHTML = '<div>Exibindo ' + (inicio + 1) + ' a ' + fim + ' de <strong>' + filtrados.length + '</strong> leituras</div>' +
+                    '<div class="flex items-center gap-1">' +
+                    '<button onclick="mudarPaginaKm(' + (paginaKmAtual - 1) + ')" ' + (paginaKmAtual === 1 ? 'disabled' : '') + ' class="px-2.5 py-1 rounded-lg border border-[#e2ddd2] hover:bg-[#ede8dc] disabled:opacity-40">Anterior</button>' +
+                    '<span class="px-2 font-bold">' + paginaKmAtual + ' / ' + totalPaginas + '</span>' +
+                    '<button onclick="mudarPaginaKm(' + (paginaKmAtual + 1) + ')" ' + (paginaKmAtual === totalPaginas ? 'disabled' : '') + ' class="px-2.5 py-1 rounded-lg border border-[#e2ddd2] hover:bg-[#ede8dc] disabled:opacity-40">PrÃ³xima</button>' +
+                    '</div>';
+            }
+        }
+
+        function mudarPaginaKm(novaPagina) {
+            paginaKmAtual = novaPagina;
+            filtrarTabelaKm();
+        }
+
+        function exportarKmExcel() {
+            if (historicoKm.length === 0) {
+                mostrarToast("Sem Dados", "NÃ£o hÃ¡ registros de quilometragem para exportar.", "warning");
+                return;
+            }
+
+            let csvStr = "\uFEFFData_Emissao;Frota;Placa;Km_Atual\n";
+            historicoKm.forEach(r => {
+                csvStr += `"${r.Data_Emissao || ''}";"${r.Frota || r.Frota_Fisica || ''}";"${r.Placa || ''}";"${r.Km_Atual || ''}"\n`;
+            });
+
+            const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `historico_quilometragem_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+
+            mostrarToast("Download Iniciado", "ExportaÃ§Ã£o em CSV (Excel) finalizada com sucesso.", "success");
+        }
+
+        function exportarKmPDF() {
+            window.print();
+        }
+
+        function limparHistoricoKm() {
+            solicitarConfirmacaoAcao("Limpar Histórico de KM", "Tem certeza que deseja apagar todos os registros de odômetro gravados no banco de dados? Esta ação não pode ser desfeita.", () => {
+                // Apaga direto no PostgreSQL (tabela historico_km); o enviarRequisicaoN8n ja
+                // ressincroniza o front com o banco depois, entao historicoKm volta vazio junto.
+                enviarRequisicaoN8n("limpar_historico_km", {});
+                adicionarLog("DELETE", "Limpeza total de histórico de quilometragem", "Operador solicitou remoção de todas as leituras de KM gravadas no banco de dados.");
+            });
+        }
+
+        function abrirEvolucaoKmVeiculo(frota) {
+            const leituras = historicoKm.filter(r => (r.Frota || r.Frota_Fisica || r.frota) === frota);
+            if (leituras.length === 0) return;
+
+            const fInfo = leituras[0];
+            const titulo = document.getElementById("evolucaoKmTitulo");
+            const sub = document.getElementById("evolucaoKmSubtitulo");
+            const corpo = document.getElementById("evolucaoKmCorpo");
+
+            if (titulo) titulo.innerText = `Frota #${frota} — ${fInfo.Placa || ''}`;
+            if (sub) sub.innerText = `${leituras.length} leitura(s) registrada(s)`;
+
+            if (corpo) {
+                corpo.innerHTML = `
+                    <div class="bg-[#f9f8f5] p-3 rounded-xl border border-[#e2ddd2] mb-3 flex justify-between items-center text-xs">
+                        <div><span class="text-[#7a7365]">Placa:</span> <strong>${fInfo.Placa || '-'}</strong></div>
+                        <div><span class="text-[#7a7365]">Total Leituras:</span> <strong class="text-[#2b4068]">${leituras.length}</strong></div>
+                    </div>
+                    <div class="relative border-l-2 border-[#2b4068] ml-4 pl-4 space-y-4">
+                        ${leituras.map(l => `
+                            <div class="relative">
+                                <div class="absolute -left-[23px] top-1 w-3 h-3 rounded-full bg-[#2b4068] border-2 border-white"></div>
+                                <div class="text-xs font-bold text-[#22201b]">Leitura de KM: <span class="text-emerald-700 font-mono text-sm">${l.Km_Atual || l.km_atual} km</span></div>
+                                <div class="text-[11px] text-[#7a7365]">Data Emissão: ${l.Data_Emissao || l.data_emissao}</div>
+                            </div>
+                        `).join("")}
+                    </div>
+                `;
+            }
+
+            const modal = document.getElementById("modalEvolucaoKm");
+            if (modal) modal.style.display = "flex";
+        }
+
+        function fecharModalEvolucaoKm() {
+            const modal = document.getElementById("modalEvolucaoKm");
+            if (modal) modal.style.display = "none";
         }
 
         // ====================================================
@@ -8814,7 +8847,14 @@
         window.changeTab = function(rawTabId) {
             if (!rawTabId) return;
             const tabId = rawTabId.replace(/^tab-/, '');
-            
+
+            // Segunda camada de proteção (além do botão ficar escondido no menu):
+            // mesmo chamando changeTab('logs') direto pelo console, usuário não-admin não entra.
+            if (tabId === 'logs' && perfilLogado !== 'administrador') {
+                mostrarToast("Acesso Negado", "Esta área é restrita a administradores.", "error");
+                return;
+            }
+
             // Fecha sidebar no mobile automaticamente
             if (window.innerWidth < 1024 && typeof toggleSidebar === 'function') {
                 toggleSidebar(false);
@@ -8869,6 +8909,12 @@
             }
             if (tabId === 'historico' && typeof gerarListaSidebarHistorico === 'function') {
                 gerarListaSidebarHistorico();
+            }
+            if (tabId === 'logs' && typeof carregarLogsDoBanco === 'function') {
+                carregarLogsDoBanco();
+            }
+            if (tabId === 'alertas' && typeof carregarAbaAlertas === 'function') {
+                carregarAbaAlertas();
             }
         };
 
@@ -9132,6 +9178,177 @@
         </div>
     </div>
 
+    <!-- MODAL DE EVOLUÇÃO DE KM DO VEÍCULO -->
+    <div id="modalEvolucaoKm" class="modal-overlay fixed inset-0 z-[9990] backdrop-blur-custom flex items-center justify-center p-4" style="display:none;">
+        <div class="bg-white rounded-2xl border border-[#e2ddd2] shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-5 border-b border-[#e2ddd2] flex items-center justify-between">
+                <div>
+                    <h3 id="evolucaoKmTitulo" class="text-base font-bold text-[#22201b]">Evolução de Odômetro</h3>
+                    <p id="evolucaoKmSubtitulo" class="text-xs text-[#7a7365]">Histórico de leituras registradas para este veículo</p>
+                </div>
+                <button onclick="fecharModalEvolucaoKm()" class="text-[#7a7365] hover:text-[#22201b] text-base p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="evolucaoKmCorpo" class="p-5 overflow-y-auto space-y-3 custom-scrollbar flex-1">
+                <!-- Timeline via JS -->
+            </div>
+            <div class="p-3 border-t border-[#e2ddd2] text-right bg-[#f9f8f5]">
+                <button onclick="fecharModalEvolucaoKm()" class="btn-editorial-secondary px-4 py-2 rounded-xl text-xs font-semibold">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE RESULTADO DA IMPORTAÇÃO DE CONFERÊNCIA DE FROTA (KM) -->
+    <div id="modalResultadoImportacaoKm" class="modal-overlay fixed inset-0 z-[9990] backdrop-blur-custom flex items-center justify-center p-4" style="display:none;">
+        <div class="bg-white rounded-2xl border border-[#e2ddd2] shadow-2xl max-w-3xl w-full overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="p-5 border-b border-[#e2ddd2] flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-[#22201b]">Resultado da Importação de KM</h3>
+                    <p id="resultadoKmSubtitulo" class="text-xs text-[#7a7365]">Resumo da conferência de frota importada</p>
+                </div>
+                <button onclick="fecharModalResultadoImportacaoKm()" class="text-[#7a7365] hover:text-[#22201b] text-base p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-5 flex gap-3 border-b border-[#e2ddd2] bg-[#f9f8f5]">
+                <div class="flex-1 bg-white rounded-xl border border-[#e2ddd2] p-3 text-center">
+                    <div class="text-[10px] uppercase tracking-wide text-[#7a7365]">Frotas Atualizadas</div>
+                    <div id="resumoKmSucesso" class="text-xl font-bold text-emerald-700">0</div>
+                </div>
+                <div class="flex-1 bg-white rounded-xl border border-[#e2ddd2] p-3 text-center">
+                    <div class="text-[10px] uppercase tracking-wide text-[#7a7365]">Sem Leitura no Arquivo</div>
+                    <div id="resumoKmSemLeitura" class="text-xl font-bold text-amber-700">0</div>
+                </div>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-5 custom-scrollbar flex-1">
+                <div>
+                    <h4 class="text-xs font-bold text-[#22201b] uppercase tracking-wide mb-2">
+                        <i class="fa-solid fa-check text-emerald-600"></i> Veículos Atualizados
+                    </h4>
+                    <table class="w-full text-xs">
+                        <thead class="text-[10px] uppercase tracking-wide text-[#7a7365] border-b border-[#e2ddd2]">
+                            <tr>
+                                <th class="py-2 px-2 text-left">Frota</th>
+                                <th class="py-2 px-2 text-left">Placa</th>
+                                <th class="py-2 px-2 text-right">KM Anterior</th>
+                                <th class="py-2 px-2 text-right">KM Atual</th>
+                                <th class="py-2 px-2 text-right">Diferença</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoResultadoKmSucesso" class="divide-y divide-[#e2ddd2]"></tbody>
+                    </table>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-[#22201b] uppercase tracking-wide mb-2">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-600"></i> Veículos Cadastrados sem Leitura no Arquivo
+                    </h4>
+                    <table class="w-full text-xs">
+                        <thead class="text-[10px] uppercase tracking-wide text-[#7a7365] border-b border-[#e2ddd2]">
+                            <tr>
+                                <th class="py-2 px-2 text-left">Frota</th>
+                                <th class="py-2 px-2 text-left">Placa (Cadastro)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoResultadoKmSemLeitura" class="divide-y divide-[#e2ddd2]"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="p-3 border-t border-[#e2ddd2] text-right bg-[#f9f8f5]">
+                <button onclick="fecharModalResultadoImportacaoKm()" class="btn-editorial-secondary px-4 py-2 rounded-xl text-xs font-semibold">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE CRIAR/EDITAR ALERTA -->
+    <div id="modalAlerta" class="modal-overlay fixed inset-0 z-[9990] backdrop-blur-custom flex items-center justify-center p-4" style="display:none;">
+        <div class="bg-white rounded-2xl border border-[#e2ddd2] shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-[#e2ddd2] flex items-center justify-between">
+                <h3 id="tituloModalAlerta" class="text-base font-bold text-[#22201b]">Criar Novo Alerta</h3>
+                <button onclick="fecharModalAlerta()" class="text-[#7a7365] hover:text-[#22201b] text-base p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="formAlerta" onsubmit="salvarAlerta(event)" class="p-5 overflow-y-auto space-y-4 custom-scrollbar flex-1">
+                <input type="hidden" id="alertaId">
+                <div class="form-group">
+                    <label for="alertaNome">Nome do Alerta *</label>
+                    <input type="text" class="form-control" id="alertaNome" required placeholder="Ex: Meta de 50 mil km - TOCO">
+                </div>
+                <div class="form-group">
+                    <label for="alertaTipo">Tipo de Alerta *</label>
+                    <select class="form-control" id="alertaTipo" onchange="atualizarCamposAlerta()" required>
+                        <option value="meta_km_pneu">Pneu atingiu meta de KM rodado</option>
+                        <option value="retirada_abaixo_km">Pneu retirado abaixo do KM mínimo</option>
+                        <option value="relatorio_km">Relatório periódico — KM rodado por frota</option>
+                        <option value="relatorio_cpk">Relatório periódico — CPK por frota</option>
+                        <option value="relatorio_movimentacao">Relatório periódico — Movimentação de pneus</option>
+                    </select>
+                </div>
+
+                <div class="form-grid" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;">
+                    <div class="form-group">
+                        <label for="alertaFiltroFrota">Frota</label>
+                        <select class="form-control" id="alertaFiltroFrota"><option value="">Todas</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="alertaFiltroTipo">Tipo de Veículo</label>
+                        <select class="form-control" id="alertaFiltroTipo">
+                            <option value="">Todos</option>
+                            <option value="TOCO">TOCO</option>
+                            <option value="TRUCK">TRUCK</option>
+                            <option value="3/4">3/4</option>
+                            <option value="VANS">VANS</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="alertaFiltroModelo">Modelo do Pneu</label>
+                        <input type="text" class="form-control" id="alertaFiltroModelo" placeholder="Todos">
+                    </div>
+                </div>
+
+                <div class="form-group" id="campoValorMeta">
+                    <label for="alertaValorMeta">Meta de KM *</label>
+                    <input type="number" class="form-control" id="alertaValorMeta" value="50000" min="0">
+                    <small style="color:var(--text-muted); font-size:10.5px;" id="dicaValorMeta">Padrão: 50.000 km</small>
+                </div>
+
+                <div class="form-group" id="campoPeriodicidade" style="display:none;">
+                    <label for="alertaPeriodicidade">Periodicidade *</label>
+                    <select class="form-control" id="alertaPeriodicidade">
+                        <option value="semanal">Semanal (toda segunda-feira)</option>
+                        <option value="mensal">Mensal (todo dia 1º)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="alertaEmail">E-mail de Destino *</label>
+                    <input type="email" class="form-control" id="alertaEmail" required placeholder="nome@empresa.com">
+                </div>
+
+                <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="alertaAtivo" checked style="width:auto;">
+                    <label for="alertaAtivo" style="margin:0;">Alerta ativo</label>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:8px; padding-top:8px;">
+                    <button type="button" onclick="fecharModalAlerta()" class="btn-editorial-secondary px-4 py-2 rounded-xl text-xs font-semibold">Cancelar</button>
+                    <button type="submit" class="btn-editorial-primary px-4 py-2 rounded-xl text-xs font-semibold">Salvar Alerta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE AVISO: PNEU RETIRADO ABAIXO DA META DE KM -->
+    <div id="modalAvisoKmBaixo" class="modal-overlay fixed inset-0 z-[9995] backdrop-blur-custom flex items-center justify-center p-4" style="display:none;">
+        <div class="bg-white rounded-2xl border-2 border-amber-400 shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="p-5 text-center">
+                <i class="fa-solid fa-triangle-exclamation text-4xl text-amber-500 mb-3"></i>
+                <h3 class="text-base font-bold text-[#22201b] mb-2">Pneu Retirado Abaixo da Meta</h3>
+                <p id="textoAvisoKmBaixo" class="text-sm text-[#7a7365] mb-4"></p>
+                <button onclick="document.getElementById('modalAvisoKmBaixo').style.display='none'" class="btn-editorial-primary px-5 py-2 rounded-xl text-xs font-semibold">Entendi</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL DE CONFIRMAÇÃO GENÉRICO (substitui o confirm() nativo do navegador) -->
     <div id="modalConfirmacao" class="modal-overlay fixed inset-0 z-[9995] backdrop-blur-custom flex items-center justify-center p-4" style="display:none;">
         <div class="bg-white rounded-2xl border border-[#e2ddd2] shadow-2xl max-w-sm w-full overflow-hidden">
@@ -9151,3 +9368,4 @@
 
 </body>
 </html>
+
