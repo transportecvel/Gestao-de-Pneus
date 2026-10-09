@@ -6921,7 +6921,8 @@
                 .then(res => {
                     resolver();
                     if (!res.ok) {
-                        if (manual) mostrarToast("Aviso de Sincronia", "Dados de pátio locais validados e gravados.", "info");
+                        // Antes essa falha era silenciosa (o usuario so via telas vazias). Agora sempre avisa.
+                        mostrarToast("Falha na Sincronização", `O servidor respondeu HTTP ${res.status}. Confira se o workflow está ATIVO no n8n e se a credencial do Postgres aponta pro banco certo.`, "error");
                         return;
                     }
 
@@ -6935,7 +6936,7 @@
                             return;
                         }
 
-                        mostrarToast("Base Sincronizada", "Conexão de auditoria estabelecida com o Banco de Dados PostgreSQL.", "success");
+                        // (toast de sucesso agora aparece depois da hidratacao, com as contagens reais)
                         adicionarLog("SHEETS", `Sincronização geral de tabelas PostgreSQL efetuada`, "Dados integrados: VEICULOS, PNEUS_CADASTRO, MOVIMENTACOES, VISTORIAS_PATIO, USUARIOS");
 
                         // Hydrate client memory dynamic data if n8n returns latest state sheets
@@ -6944,6 +6945,11 @@
                         if (serverData && serverData.movimentacoes) movimentacoes = serverData.movimentacoes;
                         if (serverData && serverData.vistorias) vistorias = serverData.vistorias;
                         if (serverData && serverData.historicoKm) historicoKm = serverData.historicoKm;
+                        if (!serverData || !Array.isArray(serverData.caminhoes)) {
+mostrarToast("Resposta Incompleta", "O servidor respondeu, mas sem a lista de veículos. Reimporte o GPneus.json atualizado no n8n e confira se ele está ativo.", "error");
+                        } else {
+mostrarToast("Base Sincronizada", `${caminhoes.length} veículo(s), ${pneus.length} pneu(s) e ${historicoKm.length} leitura(s) de KM carregados do banco.`, "success");
+                        }
 
                         carregarTabelasEPanels();
                         gerarListaSidebarHistorico();
@@ -6952,7 +6958,7 @@
                 .catch(err => {
                     resolver();
                     console.log("CORS ou offline na sincronização geral de dados. Mantendo RAM local.", err);
-                    if (manual) mostrarToast("Modo RAM Contingência", "Não foi possível conectar ao n8n. Dados locais preservados em RAM.", "info");
+                    mostrarToast("Sem Conexão com o Servidor", "Não foi possível falar com o n8n (offline, URL errada ou bloqueio de CORS). Os dados do banco não foram carregados.", "error");
                 });
         }
 
