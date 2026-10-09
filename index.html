@@ -703,7 +703,7 @@
                 </a>
                 <a href="javascript:void(0)" id="btn-tab-controle-frota" onclick="changeTab('controle-frota')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
                     <span class="flex items-center gap-2.5"><i class="fa-solid fa-truck-front w-4 text-center"></i> Controle de Frota</span>
-                    <span id="badge-total-veiculos" class="badge-editorial px-2 py-0.5 rounded-full t-num">154</span>
+                    <span id="badge-total-veiculos" class="badge-editorial px-2 py-0.5 rounded-full t-num">0</span>
                 </a>
                 <a href="javascript:void(0)" id="btn-tab-frota" onclick="changeTab('frota')" class="nav-link flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium">
                     <span class="flex items-center gap-2.5"><i class="fa-solid fa-truck-moving w-4 text-center"></i> Frotas Cadastradas</span>
@@ -1021,7 +1021,7 @@
                         <!-- Filtros por tipo de veículo com contadores -->
                         <div class="flex flex-wrap gap-2 mb-4">
                             <button onclick="filtrarGridFrotaPorTipo('TODOS')" class="btn-frota-filtro active bg-[#2b4068] text-white px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
-                                Todos <span id="pillCountTodos" class="bg-white/20 px-1.5 py-0.2 rounded-full text-[10px]">154</span>
+                                Todos <span id="pillCountTodos" class="bg-white/20 px-1.5 py-0.2 rounded-full text-[10px]">0</span>
                             </button>
                             <button onclick="filtrarGridFrotaPorTipo('TOCO')" class="btn-frota-filtro bg-[#ede8dc] text-[#5c5549] hover:bg-[#e2ddd2] px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5">
                                 Toco (2 eixos) <span id="pillCountToco" class="bg-black/10 px-1.5 py-0.2 rounded-full text-[10px]">0</span>
@@ -3055,6 +3055,13 @@
 
         function carregarTabelasEPanels() {
             atualizarCamposFiliais();
+            // Contadores da barra lateral: antes ficavam fixos no HTML (154 / 0) e nunca atualizavam.
+            const bVeic = document.getElementById("badge-total-veiculos");
+            if (bVeic) bVeic.innerText = caminhoes.length;
+            const pTodos = document.getElementById("pillCountTodos");
+            if (pTodos) pTodos.innerText = caminhoes.length;
+            const bEst = document.getElementById("badge-total-pneus-estoque");
+            if (bEst) bEst.innerText = pneus.filter(p => p.status_atual === "ESTOQUE").length;
             if (typeof carregarTabelaHistoricoKm === 'function') carregarTabelaHistoricoKm();
 
             // Remove o efeito skeleton assim que os dados reais chegam
@@ -7114,7 +7121,9 @@ mostrarToast("Base Sincronizada", `${caminhoes.length} veículo(s), ${pneus.leng
             const emMatch = rawText.match(/Emissao\.\s*:\s*(\d{2}\/\d{2}\/\d{4})/i);
             if (emMatch) dataEmissao = emMatch[1];
 
-            const lines = rawText.split(/\r?\n/);
+            // O relatorio usa CR solto + form-feed entre paginas ("...358.685\r\fMOVISTAR LOG"): sem quebrar
+            // nesses caracteres, a ultima linha de cada pagina grudava no cabecalho e era descartada.
+            const lines = rawText.split(/\r\n|\r|\n|\f/);
             const novosRegistros = [];
             let totalCorrigidos = 0;
             const divergenciasPlaca = [];
@@ -7187,7 +7196,11 @@ mostrarToast("Base Sincronizada", `${caminhoes.length} veículo(s), ${pneus.leng
 
                 const frotasComLeitura = new Set(novosRegistros.map(r => r.Frota));
                 const semLeitura = caminhoes.filter(c => !frotasComLeitura.has(String(c.frota).trim()));
-                exibirResultadoImportacaoKm(novosRegistros, kmAnteriorPorFrota, semLeitura, nomeArquivo);
+                // Se o cadastro ainda nao foi carregado (sync falhou), nao da pra classificar - trata tudo como atualizado.
+                const cadastroCarregado = caminhoes.length > 0;
+                const naoCadastradas = cadastroCarregado ? novosRegistros.filter(r => !buscarVeiculoPorFrota(r.Frota)) : [];
+                const atualizadas = cadastroCarregado ? novosRegistros.filter(r => buscarVeiculoPorFrota(r.Frota)) : novosRegistros;
+                exibirResultadoImportacaoKm(atualizadas, kmAnteriorPorFrota, semLeitura, nomeArquivo, naoCadastradas);
 
                 if (divergenciasPlaca.length > 0) {
                     mostrarToast(
@@ -7205,9 +7218,24 @@ mostrarToast("Base Sincronizada", `${caminhoes.length} veículo(s), ${pneus.leng
 
         // Mostra o popup com o resultado da importacao: quem atualizou (com km anterior/atual/diferenca)
         // e quais frotas cadastradas nao tiveram leitura nesse arquivo.
-        function exibirResultadoImportacaoKm(registros, kmAnteriorPorFrota, semLeitura, nomeArquivo) {
+        function exibirResultadoImportacaoKm(registros, kmAnteriorPorFrota, semLeitura, nomeArquivo, naoCadastradas = []) {
             const sub = document.getElementById("resultadoKmSubtitulo");
-            if (sub) sub.innerText = "Arquivo: " + nomeArquivo + " | " + registros.length + " veículo(s) lido(s)";
+            if (sub) sub.innerText = "Arquivo: " + nomeArquivo + " | " + (registros.length + naoCadastradas.length) + " linha(s) lida(s) no arquivo";
+
+            const elNaoCad = document.getElementById("resumoKmNaoCadastradas");
+            if (elNaoCad) elNaoCad.innerText = naoCadastradas.length;
+            const corpoNaoCad = document.getElementById("corpoResultadoKmNaoCadastradas");
+            if (corpoNaoCad) {
+                corpoNaoCad.innerHTML = naoCadastradas.length === 0
+                    ? `<tr><td colspan="3" class="text-center py-4 text-[#7a7365]">Todas as frotas do arquivo estão cadastradas.</td></tr>`
+                    : naoCadastradas.map(r => `
+                        <tr>
+                            <td class="py-2 px-2 font-bold text-red-600">#${escapeHtml(r.Frota)}</td>
+                            <td class="py-2 px-2 font-mono">${escapeHtml(r.Placa)}</td>
+                            <td class="py-2 px-2 text-right">${parseKmBr(r.Km_Atual).toLocaleString('pt-BR')} km</td>
+                        </tr>
+                    `).join("");
+            }
 
             const elSucesso = document.getElementById("resumoKmSucesso");
             if (elSucesso) elSucesso.innerText = registros.length;
@@ -7431,22 +7459,29 @@ mostrarToast("Base Sincronizada", `${caminhoes.length} veículo(s), ${pneus.leng
 
         function listarAlertasBackend() {
             const tbody = document.getElementById('tabelaAlertasCorpo');
-            if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-[#7a7365]">Carregando...</td></tr>`;
+            const msg = (t) => { if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-[#7a7365]">${t}</td></tr>`; };
+            msg("Carregando...");
             fetch(N8N_WEBHOOK_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "listar_alertas", operator: usuarioLogado || "SISTEMA", token: sessionToken, timestamp: new Date().toISOString() })
             })
-                .then(res => res.json())
-                .then(resp => {
-                    if (resp && resp.success && Array.isArray(resp.alertas)) {
-                        alertasConfigurados = resp.alertas;
+                .then(res => res.text().then(txt => {
+                    let json = null;
+                    try { json = JSON.parse(txt); } catch (e) { /* corpo vazio ou nao-JSON */ }
+                    return { status: res.status, json };
+                }))
+                .then(({ status, json }) => {
+                    if (json && json.success && Array.isArray(json.alertas)) {
+                        alertasConfigurados = json.alertas;
                         renderizarTabelaAlertas();
-                    } else if (tbody) {
-                        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-[#7a7365]">Não foi possível carregar os alertas.</td></tr>`;
+                    } else if (json && json.message) {
+                        msg(`O servidor recusou: ${escapeHtml(json.message)}`);
+                    } else {
+                        msg(`O servidor respondeu (HTTP ${status}) sem a lista de alertas. Reimporte o GPneus.json mais recente no n8n (ele contém a ação listar_alertas) e confira a aba Executions do n8n.`);
                     }
                 })
-                .catch(() => { if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 text-[#7a7365]">Servidor indisponível.</td></tr>`; });
+                .catch(() => msg("Sem conexão com o servidor (offline, URL errada ou bloqueio de CORS)."));
         }
 
         const ROTULOS_TIPO_ALERTA = {
@@ -9223,6 +9258,10 @@ mostrarToast("Base Sincronizada", `${caminhoes.length} veículo(s), ${pneus.leng
                     <div id="resumoKmSucesso" class="text-xl font-bold text-emerald-700">0</div>
                 </div>
                 <div class="flex-1 bg-white rounded-xl border border-[#e2ddd2] p-3 text-center">
+                    <div class="text-[10px] uppercase tracking-wide text-[#7a7365]">No Arquivo, Não Cadastradas</div>
+                    <div id="resumoKmNaoCadastradas" class="text-xl font-bold text-red-600">0</div>
+                </div>
+                <div class="flex-1 bg-white rounded-xl border border-[#e2ddd2] p-3 text-center">
                     <div class="text-[10px] uppercase tracking-wide text-[#7a7365]">Sem Leitura no Arquivo</div>
                     <div id="resumoKmSemLeitura" class="text-xl font-bold text-amber-700">0</div>
                 </div>
@@ -9243,6 +9282,22 @@ mostrarToast("Base Sincronizada", `${caminhoes.length} veículo(s), ${pneus.leng
                             </tr>
                         </thead>
                         <tbody id="corpoResultadoKmSucesso" class="divide-y divide-[#e2ddd2]"></tbody>
+                    </table>
+                </div>
+                <div>
+                    <h4 class="text-xs font-bold text-[#22201b] uppercase tracking-wide mb-1">
+                        <i class="fa-solid fa-circle-question text-red-600"></i> Estão no Arquivo, mas NÃO no Cadastro de Veículos
+                    </h4>
+                    <p class="text-[11px] text-[#7a7365] mb-2">A leitura de KM foi guardada, mas não aparece em nenhum veículo até a frota ser cadastrada (ou corrigida, se for número físico/placa com sufixo).</p>
+                    <table class="w-full text-xs">
+                        <thead class="text-[10px] uppercase tracking-wide text-[#7a7365] border-b border-[#e2ddd2]">
+                            <tr>
+                                <th class="py-2 px-2 text-left">Frota</th>
+                                <th class="py-2 px-2 text-left">Placa (Relatório)</th>
+                                <th class="py-2 px-2 text-right">KM Atual</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoResultadoKmNaoCadastradas" class="divide-y divide-[#e2ddd2]"></tbody>
                     </table>
                 </div>
                 <div>
